@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, Send } from "lucide-react";
+import Brand from "../Brand";
 import { BODY, BTN_DARK, CONTAINER, EYEBROW, H2, SECTION } from "./ui";
 
 interface Msg {
@@ -11,7 +12,7 @@ interface Msg {
 const GREETING: Msg = {
   role: "eva",
   text:
-    "Hi, I'm Eva, the HealthwithReshmi assistant. Ask me about nutrition, gut health, breathwork, sleep or longevity, how the assessment works, or what happens in a Health Clarity Session. I share general education, not medical advice.",
+    "Hi, I'm Eva, the HealthwithReshmi™ assistant. Ask me about nutrition, gut health, breathwork, sleep or longevity, how the assessment works, or what happens in a Health Clarity Session. I share general education, not medical advice.",
 };
 
 const SUGGESTIONS = [
@@ -92,7 +93,7 @@ export default function Eva({ seed }: { seed: { text: string; nonce: number } | 
         <div className="lg:col-span-5">
           <p className={EYEBROW}>Meet Eva</p>
           <h2 className={`${H2} mt-4`}>
-            Your HealthwithReshmi <em>AI assistant</em>.
+            Your <Brand /> <em>AI assistant</em>.
           </h2>
           <p className={`${BODY} mt-6`}>
             Eva helps you learn, find your way around and take the next step, any time of day.
