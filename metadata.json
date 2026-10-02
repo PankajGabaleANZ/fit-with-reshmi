@@ -1,0 +1,6 @@
+{
+  "name": "Fit with Reshmi",
+  "description": "A premium, Apple-style portfolio and landing page for Reshmi Verma, a dietician, nutritionist, and reel creator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

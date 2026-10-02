@@ -1,0 +1,24 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-serif:
+    "Montserrat", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  --color-mashiro: var(--color-mashiro-val, #ffffff);
+  --color-sakura: var(--color-sakura-val, #f4e3d7);
+  --color-momo: var(--color-momo-val, #9c4a3d);
+}
+
+:root {
+  --color-mashiro-val: var(--bg);
+  --color-sakura-val: #EAD8CE;
+  --color-momo-val: var(--ink); /* Sets user text color to match the high-contrast ink variable dynamically */
+}
+
+[data-theme="dark"] {
+  --color-mashiro-val: var(--bg);
+  --color-sakura-val: rgba(255, 247, 242, 0.14);
+  --color-momo-val: var(--ink);
+}
