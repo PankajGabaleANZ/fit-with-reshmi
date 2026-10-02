@@ -1,204 +1,146 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Menu, X } from "lucide-react";
-import { useTheme } from "../lib/theme";
-import "../styles-design.css";
+import { ChevronDown, Menu, X } from "lucide-react";
+
+const NAV_LINKS: { label: string; to: string; hash?: boolean }[] = [
+  { label: "About", to: "/#about", hash: true },
+  { label: "Programs", to: "/#how-we-work", hash: true },
+  { label: "Assessments", to: "/#assessment", hash: true },
+];
+const RESOURCES = [
+  { label: "Breathe with Reshmi", to: "/breathe" },
+  { label: "Nutrition with Reshmi", to: "/nutrition" },
+];
+const CONTACT = { label: "Contact", to: "/#contact" };
+
+const linkClass =
+  "text-[13px] font-medium tracking-wide text-muted hover:text-ink transition-colors no-underline whitespace-nowrap";
 
 export default function Navbar() {
-  const { toggleMode, isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const resourcesRef = useRef<HTMLDivElement>(null);
 
-  const isActive = (path: string) => location.pathname === path;
+  // Close menus on navigation
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setResourcesOpen(false);
+  }, [location.pathname]);
+
+  // Close the resources dropdown on outside click / Escape
+  useEffect(() => {
+    if (!resourcesOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (!resourcesRef.current?.contains(e.target as Node)) setResourcesOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setResourcesOpen(false);
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [resourcesOpen]);
+
+  const resourceActive = RESOURCES.some((r) => r.to === location.pathname);
 
   return (
     <>
-      {/* Top Banner per Specification Sheet */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#2A1B14] text-[#FAF8F5] py-1.5 px-4 text-center text-[10px] sm:text-[11px] font-sans tracking-widest uppercase flex items-center justify-center gap-2 border-b border-black/20">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#D48464] animate-pulse"></span>
-        <span>Functional Wellness Website: <strong className="text-white">reshmiverma.com</strong></span>
-        <span className="hidden md:inline text-white/40">•</span>
-        <span className="hidden md:inline text-white/80">Integrative Nutrition & Somatic Breathwork</span>
-      </div>
+      <header className="fixed top-0 inset-x-0 z-50 h-[72px] bg-canvas/95 backdrop-blur border-b border-line">
+        <div className="h-full max-w-[1280px] mx-auto px-5 sm:px-8 flex items-center justify-between gap-6">
+          <Link to="/" className="flex flex-col leading-none no-underline whitespace-nowrap shrink-0" aria-label="HealthwithReshmi, home">
+            <span className="font-serif text-[22px] sm:text-[24px] tracking-tight text-ink">HealthwithReshmi</span>
+            <span className="mt-1.5 text-[10px] tracking-[0.22em] uppercase text-faint">Science-led. Human-centred.</span>
+          </Link>
 
-      <nav className="neo-nav !top-[29px]">
-        {/* Brand Header (Sans-Serif) */}
-        <Link to="/" className="flex items-center gap-2.5 no-underline group" style={{ textDecoration: "none" }}>
-          <span className="w-2.5 h-2.5 rounded-full bg-[#D48464] group-hover:scale-125 transition-transform" />
-          <div className="flex flex-col text-left">
-            <span className="font-sans font-extrabold text-sm sm:text-base tracking-[0.16em] uppercase text-[#2A1B14] dark:text-[#FAF8F5]">
-              RESHMI VERMA
-            </span>
-            <span className="font-sans text-[9px] tracking-[0.22em] uppercase text-[#564238] dark:text-[#E6D7CD] font-medium -mt-0.5">
-              Functional Wellness
-            </span>
+          <nav className="hidden lg:flex items-center gap-7" aria-label="Main">
+            {NAV_LINKS.map((l) => (
+              <a key={l.label} href={l.to} className={linkClass}>
+                {l.label}
+              </a>
+            ))}
+
+            <div className="relative" ref={resourcesRef}>
+              <button
+                onClick={() => setResourcesOpen((o) => !o)}
+                aria-expanded={resourcesOpen}
+                aria-haspopup="true"
+                className={`${linkClass} inline-flex items-center gap-1 cursor-pointer ${resourceActive ? "!text-ink" : ""}`}
+              >
+                Resources <ChevronDown size={14} className={`transition-transform ${resourcesOpen ? "rotate-180" : ""}`} />
+              </button>
+              {resourcesOpen && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-4 min-w-[220px] bg-canvas border border-line rounded-lg shadow-lg py-2">
+                  {RESOURCES.map((r) => (
+                    <Link
+                      key={r.to}
+                      to={r.to}
+                      className="block px-4 py-2.5 text-[13px] text-muted hover:text-ink hover:bg-surface no-underline"
+                    >
+                      {r.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <a href={CONTACT.to} className={linkClass}>
+              {CONTACT.label}
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/booking")}
+              className="hidden sm:inline-flex items-center whitespace-nowrap px-5 py-2.5 rounded-md bg-espresso text-linen text-[12px] font-semibold tracking-[0.1em] uppercase hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              Book a Consultation →
+            </button>
+
+            <button
+              className="lg:hidden p-2 rounded-md text-ink hover:bg-surface transition-colors cursor-pointer"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center gap-6">
-          <Link
-            to="/"
-            className={`text-xs font-bold uppercase tracking-wider transition-colors ${
-              isActive("/") ? "text-[#D48464] font-extrabold" : "text-[#2A1B14] dark:text-[#FAF8F5] hover:text-[#D48464]"
-            }`}
-            style={{ textDecoration: "none" }}
-          >
-            Home
-          </Link>
-          <a
-            href="/#audit-hub"
-            className="text-xs font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] hover:text-[#D48464] transition-colors"
-            style={{ textDecoration: "none" }}
-          >
-            Audit Hub
-          </a>
-          <Link
-            to="/breathe"
-            className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ${
-              isActive("/breathe") ? "text-[#D48464] font-extrabold" : "text-[#2A1B14] dark:text-[#FAF8F5] hover:text-[#D48464]"
-            }`}
-            style={{ textDecoration: "none" }}
-          >
-            Breathe
-            <span className="px-1.5 py-0.2 rounded text-[8px] font-mono bg-[#D48464]/15 text-[#D48464] font-bold">4-7-8</span>
-          </Link>
-          <Link
-            to="/nutrition"
-            className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ${
-              isActive("/nutrition") ? "text-[#4D735D] font-extrabold" : "text-[#2A1B14] dark:text-[#FAF8F5] hover:text-[#4D735D]"
-            }`}
-            style={{ textDecoration: "none" }}
-          >
-            Nutrition
-            <span className="px-1.5 py-0.2 rounded text-[8px] font-mono bg-[#4D735D]/15 text-[#4D735D] font-bold">Bio</span>
-          </Link>
-          <a
-            href="/#method"
-            className="text-xs font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] hover:text-[#D48464] transition-colors"
-            style={{ textDecoration: "none" }}
-          >
-            Method
-          </a>
-          <a
-            href="/#ai-lab"
-            className="text-xs font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] hover:text-[#D48464] transition-colors"
-            style={{ textDecoration: "none" }}
-          >
-            AI Lab
-          </a>
-          <Link
-            to="/login"
-            className={`text-xs font-bold uppercase tracking-wider transition-colors ${
-              isActive("/login") ? "text-[#D48464] font-extrabold" : "text-[#564238] dark:text-[#E6D7CD] hover:text-[#D48464]"
-            }`}
-            style={{ textDecoration: "none" }}
-          >
-            Client Portal
-          </Link>
         </div>
+      </header>
 
-        <div className="flex items-center gap-3">
-          <button
-            className="theme-toggle"
-            onClick={toggleMode}
-            title="Toggle Light/Dark"
-            aria-label="Toggle Theme"
-          >
-            {isDark ? <Sun size={17} /> : <Moon size={17} />}
-          </button>
-          
-          {/* Header Button (Espresso) per Snapshot */}
-          <button
-            className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider text-[#FAF8F5] bg-[#2A1B14] dark:bg-[#FAF8F5] dark:text-[#2A1B14] hover:bg-[#3E291F] dark:hover:bg-white shadow-md transition-all hover:scale-105 cursor-pointer border border-black/10"
-            onClick={() => navigate("/booking")}
-          >
-            Book Consultation
-          </button>
-          
-          {/* Mobile Menu Toggle Button */}
-          <button
-            className="lg:hidden p-2 rounded-xl border border-[var(--glass-line)] text-[var(--ink)] hover:bg-[var(--glass)] transition-colors"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle Navigation Menu"
-          >
-            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed top-[86px] inset-x-0 bg-[#FAF8F5] dark:bg-[#1A110D] border-b border-[var(--glass-line)] z-50 p-6 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-top duration-200">
-          <Link
-            to="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-sm font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] py-2 border-b border-[var(--glass-line)] flex items-center justify-between"
-            style={{ textDecoration: "none" }}
-          >
-            <span>Home</span>
-            {isActive("/") && <span className="text-xs text-[#D48464]">Active</span>}
-          </Link>
-          <a
-            href="/#audit-hub"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-sm font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] py-2 border-b border-[var(--glass-line)] flex items-center justify-between"
-            style={{ textDecoration: "none" }}
-          >
-            <span>Diagnostic Audit Hub</span>
-            <span className="text-[10px] text-[#D48464] font-mono">Page 1</span>
-          </a>
-          <Link
-            to="/breathe"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-sm font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] py-2 border-b border-[var(--glass-line)] flex items-center justify-between"
-            style={{ textDecoration: "none" }}
-          >
-            <span>Breathe with Reshmi</span>
-            <span className="text-[10px] text-[#D48464] font-mono">4-7-8 Pacer</span>
-          </Link>
-          <Link
-            to="/nutrition"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-sm font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] py-2 border-b border-[var(--glass-line)] flex items-center justify-between"
-            style={{ textDecoration: "none" }}
-          >
-            <span>Nutrition with Reshmi</span>
-            <span className="text-[10px] text-[#4D735D] font-mono">Bio-Alchemy</span>
-          </Link>
-          <a
-            href="/#method"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-sm font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] py-2 border-b border-[var(--glass-line)] flex items-center justify-between"
-            style={{ textDecoration: "none" }}
-          >
-            <span>RESET Method</span>
-          </a>
-          <a
-            href="/#ai-lab"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-sm font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] py-2 border-b border-[var(--glass-line)] flex items-center justify-between"
-            style={{ textDecoration: "none" }}
-          >
-            <span>AI Lab Companion</span>
-          </a>
-          <Link
-            to="/login"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-sm font-bold uppercase tracking-wider text-[#2A1B14] dark:text-[#FAF8F5] py-2 border-b border-[var(--glass-line)]"
-            style={{ textDecoration: "none" }}
-          >
-            Client Portal
-          </Link>
+        <div className="lg:hidden fixed top-[72px] inset-x-0 z-40 bg-canvas border-b border-line px-5 py-4 shadow-lg flex flex-col max-h-[calc(100vh-72px)] overflow-y-auto">
+          {[...NAV_LINKS, CONTACT].map((l) => (
+            <a
+              key={l.label}
+              href={l.to}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`${linkClass} !text-[15px] py-3.5 border-b border-line`}
+            >
+              {l.label}
+            </a>
+          ))}
+          {RESOURCES.map((r) => (
+            <Link
+              key={r.to}
+              to={r.to}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`${linkClass} !text-[15px] py-3.5 border-b border-line`}
+            >
+              {r.label}
+            </Link>
+          ))}
           <button
             onClick={() => {
               setMobileMenuOpen(false);
               navigate("/booking");
             }}
-            className="w-full mt-2 py-3 rounded-full bg-[#2A1B14] text-[#FAF8F5] text-xs font-bold uppercase tracking-widest shadow-md text-center"
+            className="mt-4 w-full py-3.5 rounded-md bg-espresso text-linen text-[12px] font-semibold tracking-[0.1em] uppercase cursor-pointer"
           >
-            Book Consultation
+            Book a Consultation →
           </button>
         </div>
       )}

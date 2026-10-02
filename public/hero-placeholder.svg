@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMaxYMid slice">
+  <!-- PLACEHOLDER hero image. Replace with a warm, wide portrait of Reshmi (keep the left ~45% calm so text reads). -->
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F4EEE6"/>
+      <stop offset="1" stop-color="#E7D9C9"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#E9A486" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#D48464" stop-opacity="0.15"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DCC9B3"/>
+      <stop offset="1" stop-color="#CDB59B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#wall)"/>
+  <rect y="690" width="1600" height="210" fill="url(#floor)"/>
+  <circle cx="1170" cy="360" r="300" fill="url(#sun)"/>
+  <!-- soft window light -->
+  <rect x="860" y="90" width="150" height="560" rx="6" fill="#FFFFFF" opacity="0.28"/>
+  <rect x="1030" y="90" width="150" height="560" rx="6" fill="#FFFFFF" opacity="0.2"/>
+  <!-- plant -->
+  <g transform="translate(1330 700)" fill="#4D735D">
+    <path d="M0 0 C-70 -120 -60 -260 -10 -380 C40 -270 40 -120 0 0Z" opacity="0.9"/>
+    <path d="M10 0 C90 -90 170 -170 260 -200 C210 -100 130 -30 10 0Z" opacity="0.8"/>
+    <path d="M-10 0 C-110 -60 -190 -80 -250 -150 C-160 -150 -70 -90 -10 0Z" opacity="0.75"/>
+    <path d="M0 0 C-20 -160 20 -300 110 -380 C110 -240 70 -110 0 0Z" fill="#3E6350" opacity="0.85"/>
+  </g>
+  <g transform="translate(1500 700)" fill="#5E866D">
+    <path d="M0 0 C-50 -90 -40 -190 0 -270 C40 -190 40 -90 0 0Z" opacity="0.8"/>
+    <path d="M0 0 C60 -60 110 -110 170 -120 C130 -50 80 -10 0 0Z" opacity="0.7"/>
+  </g>
+  <!-- sofa suggestion -->
+  <rect x="760" y="560" width="520" height="170" rx="40" fill="#C9B198" opacity="0.7"/>
+</svg>
