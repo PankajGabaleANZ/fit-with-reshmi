@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Activity, ArrowRight, Dna, Leaf, Search, Sprout, Wind } from "lucide-react";
 import Assessment from "../components/home/Assessment";
 import BreatheNow from "../components/home/BreatheNow";
+import Brand from "../components/Brand";
 import Eva from "../components/home/Eva";
 import InstagramReels from "../components/home/InstagramReels";
 import { BODY, BTN_DARK, BTN_OUTLINE, BTN_PRIMARY, CONTAINER, EYEBROW, H2, SECTION } from "../components/home/ui";
@@ -393,7 +394,7 @@ export default function Home() {
         </div>
 
         <div className={`${CONTAINER} mt-[72px] pt-8 border-t border-line flex flex-col md:flex-row items-center justify-between gap-4 text-[12px] text-faint text-center md:text-left`}>
-          <span>© {new Date().getFullYear()} HealthwithReshmi. Educational content only, not a substitute for medical advice.</span>
+          <span>© {new Date().getFullYear()} <Brand tm={false} className="font-serif text-[14px] text-muted" />. Educational content only, not a substitute for medical advice.</span>
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2" aria-label="Footer">
             <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-ink transition-colors no-underline">
               Instagram @{INSTAGRAM_HANDLE}

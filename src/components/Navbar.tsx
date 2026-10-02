@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ChevronDown, Menu, X } from "lucide-react";
+import Brand from "./Brand";
 
 const NAV_LINKS: { label: string; to: string; hash?: boolean }[] = [
   { label: "About", to: "/#about", hash: true },
@@ -51,7 +52,7 @@ export default function Navbar() {
       <header className="fixed top-0 inset-x-0 z-50 h-[72px] bg-canvas/95 backdrop-blur border-b border-line">
         <div className="h-full max-w-[1280px] mx-auto px-5 sm:px-8 flex items-center justify-between gap-6">
           <Link to="/" className="flex flex-col leading-none no-underline whitespace-nowrap shrink-0" aria-label="HealthwithReshmi, home">
-            <span className="font-serif text-[22px] sm:text-[24px] tracking-tight text-ink">HealthwithReshmi</span>
+            <Brand className="font-serif text-[21px] sm:text-[23px] tracking-tight text-ink" />
             <span className="mt-1.5 text-[10px] tracking-[0.22em] uppercase text-faint">Science-led. Human-centred.</span>
           </Link>
 
