@@ -61,6 +61,12 @@ export const BIOMARKERS = [
   }
 ];
 
+// Reels shown on the home page. Paste a reel link (tracking parameters are ignored); newest first.
+export const INSTAGRAM_REEL_URLS: string[] = [
+  'https://www.instagram.com/reel/Dd4Vo8Fz8ka/',
+];
+
+// Legacy placeholder data (no longer used by the home page).
 export const INSTAGRAM_REELS = [
   {
     id: 'insulin-resistance',

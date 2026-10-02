@@ -1,7 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
-/* The theme toggle sets data-theme="dark" on <body>; make Tailwind's dark: variant follow it */
+/* Light theme only. Tie dark: to a data-theme="dark" attribute that is never set, so the
+   dark: classes still present on inner pages don't follow the visitor's OS dark mode. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
@@ -45,19 +46,6 @@
   --c-accent: #D48464;
   --c-agave: #4D735D;
   --c-band: #2A1B14;
-}
-
-[data-theme="dark"] {
-  --c-canvas: #1A110D;
-  --c-ink: #FAF8F5;
-  --c-muted: #D9C9BE;
-  --c-faint: #A8958A;
-  --c-surface: #2A1D16;
-  --c-card: #251913;
-  --c-line: rgba(250, 248, 245, 0.14);
-  --c-accent: #E09273;
-  --c-agave: #69987B;
-  --c-band: #120A07;
 }
 
 html {

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Menu, X } from "lucide-react";
-import { useTheme } from "../lib/theme";
+import { Menu, X } from "lucide-react";
 
 const NAV_LINKS: { label: string; to: string; hash?: boolean }[] = [
   { label: "Assessments", to: "/#audit-hub", hash: true },
@@ -16,7 +15,6 @@ const linkClass =
   "text-[13px] font-medium tracking-wide text-muted hover:text-ink transition-colors no-underline whitespace-nowrap";
 
 export default function Navbar() {
-  const { toggleMode, isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -57,13 +55,7 @@ export default function Navbar() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={toggleMode}
-              className="p-2 rounded-md text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer"
-              aria-label="Toggle light or dark theme"
-            >
-              {isDark ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+
 
             <button
               onClick={() => navigate("/booking")}

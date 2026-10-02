@@ -1,11 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { INSTAGRAM_REELS } from "../lib/data";
+import { INSTAGRAM_REEL_URLS } from "../lib/data";
+import { AmbientBreath } from "../lib/ambient";
 import {
-  Activity, Play, Pause, RotateCcw, ChevronLeft, ChevronRight,
+  Activity, Play, Pause, RotateCcw, Volume2, VolumeX,
   ArrowRight, Check, X, Dna, Zap
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+
+// Instagram shortcode from a reel/post link (tracking parameters are ignored)
+const reelCodes = INSTAGRAM_REEL_URLS
+  .map((url) => url.match(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/)?.[1])
+  .filter((code): code is string => Boolean(code));
 
 // PLACEHOLDER hero image — swap this for a warm, wide portrait of Reshmi.
 // Keep the left ~45% of the photo calm: the headline sits over it.
@@ -257,8 +263,7 @@ const RESET_STEPS = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const [reels, setReels] = useState<any[]>(INSTAGRAM_REELS);
-  const reelsScrollRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   // Diagnostic Audit Modal State
   const [activeAuditType, setActiveAuditType] = useState<string | null>(null);
@@ -282,17 +287,21 @@ export default function Home() {
     },
   ]);
 
-  // Load backend reels if present
+  // Ambient soundscape for the breathing pacer
+  const [soundOn, setSoundOn] = useState<boolean>(true);
+  const ambience = useRef<AmbientBreath | null>(null);
+  const getAmbience = () => (ambience.current ??= new AmbientBreath());
+
   useEffect(() => {
-    fetch('/api/reels')
-      .then(res => res.json())
-      .then(data => {
-        if (data.reels && data.reels.length > 0) {
-          setReels(data.reels);
-        }
-      })
-      .catch(err => console.log('Using default reels:', err));
-  }, []);
+    if (!isBreatheActive || !soundOn) {
+      ambience.current?.fadeOut();
+      return;
+    }
+    getAmbience().setPhase(breathePhase, breathePhase === 'inhale' ? 4 : breathePhase === 'hold' ? 7 : 8);
+  }, [isBreatheActive, breathePhase, soundOn]);
+
+  // Release the audio device when leaving the page
+  useEffect(() => () => { ambience.current?.dispose(); ambience.current = null; }, []);
 
   // 4-7-8 Somatic Timer Engine for Home Section
   useEffect(() => {
@@ -320,8 +329,14 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [isBreatheActive, breathePhase]);
 
+  const toggleSound = () => {
+    if (!soundOn) getAmbience().unlock();
+    setSoundOn(on => !on);
+  };
+
   const toggleHomeBreathe = () => {
     if (!isBreatheActive) {
+      if (soundOn) getAmbience().unlock(); // must happen inside the click for browsers to allow audio
       setIsBreatheActive(true);
       setBreathePhase('inhale');
       setBreatheSeconds(4);
@@ -394,10 +409,14 @@ export default function Home() {
     }, 600);
   };
 
-  const phaseDuration = breathePhase === 'inhale' ? 4 : breathePhase === 'hold' ? 7 : 8;
-  const orbScale = isBreatheActive
-    ? breathePhase === 'inhale' ? [1, 1.25] : breathePhase === 'hold' ? 1.25 : [1.25, 1]
-    : [1, 1.04, 1];
+  // Ring choreography: grows over the 4s inhale, gently shimmers through the 7s hold, settles over the 8s exhale
+  const ring = !isBreatheActive
+    ? { scale: [1, 1.03, 1], innerScale: [1, 1.05, 1], glow: [0.45, 0.6, 0.45], transition: { duration: 6, repeat: Infinity, ease: 'easeInOut' as const } }
+    : breathePhase === 'inhale'
+    ? { scale: [1, 1.14], innerScale: [1, 1.2], glow: [0.5, 1], transition: { duration: 4, ease: 'easeInOut' as const } }
+    : breathePhase === 'hold'
+    ? { scale: [1.14, 1.155, 1.14], innerScale: [1.2, 1.22, 1.2], glow: [1, 0.85, 1], transition: { duration: 3.5, repeat: Infinity, ease: 'easeInOut' as const } }
+    : { scale: [1.14, 1], innerScale: [1.2, 1], glow: [1, 0.4], transition: { duration: 8, ease: 'easeInOut' as const } };
 
   return (
     <div className="bg-canvas text-ink min-h-screen selection:bg-terracotta selection:text-white">
@@ -494,9 +513,9 @@ export default function Home() {
       </section>
 
       {/* =====================================================================
-          "BREATHE NOW" · espresso band with 4-7-8 ring
+          "BREATHE NOW" · espresso band with a glowing 4-7-8 ring and ambient sound
           ===================================================================== */}
-      <section className="bg-band text-linen">
+      <section className="bg-band text-linen overflow-hidden">
         <div className={`${CONTAINER} ${SECTION} grid grid-cols-1 lg:grid-cols-2 gap-14 items-center`}>
           <div>
             <p className="text-[11px] font-semibold tracking-[0.22em] uppercase text-terracotta">Somatic feature</p>
@@ -507,7 +526,7 @@ export default function Home() {
               A guided 4-7-8 pacer
             </p>
             <p className="text-[16px] sm:text-[17px] leading-relaxed text-linen/75 max-w-[460px] mt-6">
-              Four seconds in, seven held, eight out. A slow, guided rhythm that settles your nervous system in a few minutes, wherever you are.
+              Four seconds in, seven held, eight out. A slow, guided rhythm, with a soft ambient soundscape, that settles your nervous system in a few minutes, wherever you are.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 mt-9">
@@ -522,52 +541,113 @@ export default function Home() {
               >
                 <RotateCcw size={15} />
               </button>
-              <span className="text-[12px] text-linen/60 ml-1" aria-live="polite">
-                {breatheCycles} {breatheCycles === 1 ? 'cycle' : 'cycles'} completed
-              </span>
+              <button
+                onClick={toggleSound}
+                aria-pressed={soundOn}
+                className="inline-flex items-center gap-2 p-3.5 sm:px-4 rounded-md border border-linen/25 text-linen hover:bg-linen/10 transition-colors cursor-pointer text-[12px] font-semibold tracking-[0.1em] uppercase"
+              >
+                {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                <span className="hidden sm:inline">{soundOn ? 'Sound on' : 'Sound off'}</span>
+                <span className="sr-only sm:hidden">{soundOn ? 'Sound on' : 'Sound off'}</span>
+              </button>
             </div>
+
+            <p className="text-[12px] text-linen/60 mt-5" aria-live="polite">
+              {breatheCycles} {breatheCycles === 1 ? 'cycle' : 'cycles'} completed
+            </p>
 
             <Link
               to="/breathe"
-              className="inline-flex items-center gap-2 mt-8 text-[12px] font-semibold tracking-[0.12em] uppercase text-terracotta hover:text-linen transition-colors no-underline"
+              className="inline-flex items-center gap-2 mt-6 text-[12px] font-semibold tracking-[0.12em] uppercase text-terracotta hover:text-linen transition-colors no-underline"
             >
               Open the full breathing sanctuary <ArrowRight size={14} />
             </Link>
           </div>
 
+          {/* Glowing organic ring */}
           <div className="flex items-center justify-center">
-            <div className="relative w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] flex items-center justify-center">
+            <div className="relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] flex items-center justify-center">
+              {/* Soft bloom behind the ring */}
               <motion.div
                 aria-hidden="true"
-                animate={{ scale: orbScale, opacity: isBreatheActive ? 0.9 : 0.5 }}
-                transition={{
-                  duration: isBreatheActive ? phaseDuration : 3,
-                  ease: "easeInOut",
-                  repeat: isBreatheActive ? 0 : Infinity,
+                animate={{ scale: ring.scale, opacity: ring.glow }}
+                transition={ring.transition}
+                className="absolute -inset-[10%] rounded-full blur-3xl"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(212,132,100,0.38) 0%, rgba(212,132,100,0.14) 40%, rgba(77,115,93,0.16) 62%, transparent 72%)',
                 }}
-                className="absolute inset-0 rounded-full bg-radial from-terracotta/35 via-terracotta/10 to-transparent blur-2xl"
               />
-              <motion.button
-                onClick={toggleHomeBreathe}
-                animate={{ scale: orbScale }}
-                transition={{
-                  duration: isBreatheActive ? phaseDuration : 3,
-                  ease: "easeInOut",
-                  repeat: isBreatheActive ? 0 : Infinity,
-                }}
-                aria-label={isBreatheActive ? 'Pause breathing session' : 'Start breathing session'}
-                className="relative w-[220px] h-[220px] sm:w-[260px] sm:h-[260px] rounded-full border border-terracotta/70 bg-[#2A1B14] shadow-[0_0_60px_rgba(212,132,100,0.35)] flex flex-col items-center justify-center select-none cursor-pointer"
+
+              {/* Outer ring: drifting gradient, breathes in and out */}
+              <motion.div
+                aria-hidden="true"
+                animate={{ scale: ring.scale }}
+                transition={ring.transition}
+                className="absolute inset-0"
               >
-                <span className="text-[10px] tracking-[0.22em] uppercase text-terracotta font-semibold">
+                <motion.svg
+                  viewBox="0 0 400 400"
+                  className="w-full h-full"
+                  animate={reduceMotion ? undefined : { rotate: 360 }}
+                  transition={{ duration: 36, repeat: Infinity, ease: 'linear' }}
+                >
+                  <defs>
+                    <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stopColor="#F0B091" />
+                      <stop offset="0.42" stopColor="#D48464" />
+                      <stop offset="0.75" stopColor="#8A7A58" />
+                      <stop offset="1" stopColor="#4D735D" />
+                    </linearGradient>
+                    <filter id="ringBlur" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="9" />
+                    </filter>
+                  </defs>
+                  <circle cx="200" cy="200" r="172" fill="none" stroke="url(#ringGrad)" strokeWidth="14" opacity="0.55" filter="url(#ringBlur)" />
+                  <circle cx="200" cy="200" r="172" fill="none" stroke="url(#ringGrad)" strokeWidth="1.5" />
+                </motion.svg>
+              </motion.div>
+
+              {/* Inner ring: slightly offset, turns the other way for an organic, living edge */}
+              <motion.div
+                aria-hidden="true"
+                animate={{ scale: ring.innerScale }}
+                transition={ring.transition}
+                className="absolute inset-[6%]"
+              >
+                <motion.svg
+                  viewBox="0 0 400 400"
+                  className="w-full h-full"
+                  animate={reduceMotion ? undefined : { rotate: -360 }}
+                  transition={{ duration: 52, repeat: Infinity, ease: 'linear' }}
+                >
+                  <defs>
+                    <linearGradient id="ringGrad2" x1="1" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor="#4D735D" />
+                      <stop offset="0.5" stopColor="#D48464" />
+                      <stop offset="1" stopColor="#F0B091" />
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="200" cy="200" rx="172" ry="163" fill="none" stroke="url(#ringGrad2)" strokeWidth="1" opacity="0.6" />
+                </motion.svg>
+              </motion.div>
+
+              {/* Centre: tap to start / pause */}
+              <button
+                onClick={toggleHomeBreathe}
+                aria-label={isBreatheActive ? 'Pause breathing session' : 'Start breathing session'}
+                className="relative w-[58%] h-[58%] rounded-full flex flex-col items-center justify-center text-center select-none cursor-pointer"
+              >
+                <span className="text-[10px] sm:text-[11px] tracking-[0.24em] uppercase text-terracotta font-semibold">
                   {isBreatheActive ? (breathePhase === 'inhale' ? 'Inhale' : breathePhase === 'hold' ? 'Hold' : 'Exhale') : 'Somatic cadence'}
                 </span>
-                <span className="font-serif font-light text-[56px] sm:text-[64px] leading-none text-linen my-2">
+                <span className="font-serif font-light text-[56px] sm:text-[76px] leading-none text-linen my-2 sm:my-3 tabular-nums">
                   {isBreatheActive ? breatheSeconds : '4-7-8'}
                 </span>
                 <span className="text-[10px] tracking-[0.2em] uppercase text-linen/60">
-                  {isBreatheActive ? 'Vagal entrainment' : 'Tap to start'}
+                  {isBreatheActive ? 'Breathe with the ring' : 'Tap to begin'}
                 </span>
-              </motion.button>
+              </button>
             </div>
           </div>
         </div>
@@ -713,72 +793,47 @@ export default function Home() {
       </section>
 
       {/* =====================================================================
-          INSTAGRAM REELS
+          INSTAGRAM REELS · lightweight lazy embeds (edit INSTAGRAM_REEL_URLS in lib/data.ts)
           ===================================================================== */}
       <section className={`${SECTION} bg-surface`}>
-        <div className={CONTAINER}>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
-            <div>
-              <p className={EYEBROW}>Clinical community</p>
-              <h2 className={`${H2} mt-4`}>
-                Daily insights on <em>Instagram</em>.
-              </h2>
-              <p className="text-[15px] text-muted mt-3">
-                Bite-sized nutrition and breathwork education from @fitwithreshmi.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => reelsScrollRef.current?.scrollBy({ left: -280, behavior: 'smooth' })}
-                className="p-3 rounded-md border border-line text-ink hover:bg-card transition-colors cursor-pointer"
-                aria-label="Scroll reels left"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={() => reelsScrollRef.current?.scrollBy({ left: 280, behavior: 'smooth' })}
-                className="p-3 rounded-md border border-line text-ink hover:bg-card transition-colors cursor-pointer"
-                aria-label="Scroll reels right"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
+        <div className={`${CONTAINER} grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center`}>
+          <div className="lg:col-span-5">
+            <p className={EYEBROW}>Clinical community</p>
+            <h2 className={`${H2} mt-4`}>
+              Daily insights on <em>Instagram</em>.
+            </h2>
+            <p className={`${BODY} mt-6 max-w-[440px]`}>
+              Bite-sized nutrition and breathwork education, straight from Reshmi's feed.
+            </p>
+            <a
+              href="https://www.instagram.com/healthwithreshmi/"
+              target="_blank"
+              rel="noreferrer"
+              className={`${BTN_DARK} mt-9 no-underline`}
+            >
+              Follow @healthwithreshmi <ArrowRight size={14} />
+            </a>
           </div>
 
-          <div ref={reelsScrollRef} className="flex gap-5 overflow-x-auto pb-4">
-            {reels.map((reel, idx) => (
-              <a
-                key={reel.id || idx}
-                href={reel.instagramUrl || "https://instagram.com/fitwithreshmi"}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-shrink-0 w-60 sm:w-64 aspect-[9/15] rounded-xl overflow-hidden bg-black relative group"
+          <div className="lg:col-span-7 flex gap-5 overflow-x-auto snap-x pb-2 lg:justify-center">
+            {reelCodes.map((code) => (
+              <div
+                key={code}
+                className="snap-start shrink-0 w-full max-w-[360px] mx-auto lg:mx-0 h-[640px] rounded-xl overflow-hidden bg-card border border-line relative"
               >
-                {reel.video_url ? (
-                  <video
-                    src={reel.video_url}
-                    muted
-                    loop
-                    playsInline
-                    autoPlay
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <img src={reel.thumbnail} alt={reel.title} className="w-full h-full object-cover" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                <div className="absolute bottom-4 inset-x-4 text-white">
-                  <span className="text-[10px] tracking-[0.14em] text-terracotta uppercase font-semibold block mb-1">
-                    @fitwithreshmi
-                  </span>
-                  <h3 className="font-serif text-[15px] leading-snug line-clamp-2">{reel.title}</h3>
-                  <div className="flex items-center justify-between text-[11px] text-white/80 mt-2">
-                    <span className="flex items-center gap-1"><Play size={10} className="fill-current" /> Watch</span>
-                    <span>{reel.views || "12.4k"} views</span>
-                  </div>
-                </div>
-              </a>
+                <span className="absolute inset-0 flex items-center justify-center text-[12px] tracking-[0.14em] uppercase text-faint">
+                  Loading reel…
+                </span>
+                <iframe
+                  src={`https://www.instagram.com/reel/${code}/embed/`}
+                  title="Instagram reel from Reshmi Verma"
+                  loading="lazy"
+                  allow="encrypted-media; fullscreen"
+                  allowFullScreen
+                  scrolling="no"
+                  className="relative w-full h-full border-0 bg-transparent"
+                />
+              </div>
             ))}
           </div>
         </div>
