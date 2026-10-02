@@ -1,16 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { INSTAGRAM_REELS } from "../lib/data";
-import { 
-  Activity, Play, Pause, RotateCcw, Heart, ChevronLeft, ChevronRight, 
-  ArrowRight, Check, X, Shield, Dna, Wind, Sparkles, Timer, Compass, 
-  ExternalLink, Layers, Microscope, Clock, Award, Moon, CheckCircle2,
-  AlertTriangle, Flame, ArrowUpRight
+import {
+  Activity, Play, Pause, RotateCcw, ChevronLeft, ChevronRight,
+  ArrowRight, Check, X, Dna, Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { useTheme } from "../lib/theme";
-import AmbientCanvas from "../components/AmbientCanvas";
-import "../styles-design.css";
+
+// PLACEHOLDER hero image — swap this for a warm, wide portrait of Reshmi.
+// Keep the left ~45% of the photo calm: the headline sits over it.
+const HERO_IMAGE = "/hero-placeholder.svg";
+
+// Shared layout + type tokens (from the design spec sheet)
+const CONTAINER = "max-w-[1280px] mx-auto";
+const SECTION = "px-5 sm:px-8 py-[60px] md:py-[90px] lg:py-[120px]";
+const EYEBROW = "text-[11px] font-semibold tracking-[0.22em] uppercase text-accent";
+const H2 = "font-serif font-light text-[34px] sm:text-[44px] lg:text-[52px] leading-[1.1] tracking-tight text-ink";
+const BODY = "text-[16px] sm:text-[17px] leading-relaxed text-muted";
+const BTN = "inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-md text-[12px] font-semibold tracking-[0.12em] uppercase transition-colors cursor-pointer";
+const BTN_PRIMARY = `${BTN} bg-terracotta text-white hover:bg-[#C27354]`;
+const BTN_OUTLINE = `${BTN} border border-ink text-ink hover:bg-ink hover:text-canvas`;
+const BTN_DARK = `${BTN} bg-ink text-canvas hover:opacity-90`;
 
 // Assessment Data for the Diagnostic Audit Hub
 interface AuditQuestion {
@@ -189,19 +199,66 @@ const AUDIT_QUESTIONS: Record<string, { title: string; subtitle: string; questio
   }
 };
 
+const AUDIT_CARDS = [
+  {
+    key: "gut",
+    icon: Activity,
+    title: "Gut & Metabolic Flexibility",
+    desc: "Intestinal barrier health, blood-sugar stability and digestive vitality.",
+    cta: "Start assessment",
+  },
+  {
+    key: "bolt",
+    icon: Zap,
+    title: "BOLT Score & Vagus Nerve",
+    desc: "CO₂ tolerance, breathing efficiency and parasympathetic resilience.",
+    cta: "Measure your BOLT",
+  },
+  {
+    key: "hormone",
+    icon: Dna,
+    title: "Hormonal & Lifestyle Restoration",
+    desc: "Cortisol rhythm, thyroid sensitivity and circadian alignment.",
+    cta: "Start assessment",
+  },
+];
+
+const PATHWAYS = [
+  {
+    label: "Pathway 01",
+    title: "Fit with Reshmi",
+    desc: "Clinical movement and metabolic conditioning for lasting physical resilience.",
+    cta: "Explore the practice",
+    to: "/booking",
+  },
+  {
+    label: "Pathway 02",
+    title: "Breathe with Reshmi",
+    desc: "Guided 4-7-8 breathwork to restore nervous-system calm and recovery.",
+    cta: "Start breathing",
+    to: "/breathe",
+  },
+  {
+    label: "Pathway 03",
+    title: "Nutrition with Reshmi",
+    desc: "Gut, hormone and circadian nutrition built around your own biomarkers.",
+    cta: "Explore nutrition",
+    to: "/nutrition",
+  },
+];
+
+const RESET_STEPS = [
+  { letter: "R", title: "Reports-Led Precision", desc: "Up to 50 biomarkers tracked to map hormonal and metabolic pathways without guesswork." },
+  { letter: "E", title: "Element Nutrition", desc: "Micronutrient and polyphenol density tailored to your lab results." },
+  { letter: "S", title: "Somatic Breath Pacing", desc: "4-7-8 and resonance breathing to lower cortisol and steady heart-rate variability." },
+  { letter: "E", title: "Evaluation Loop", desc: "Regular check-ins so your protocol keeps pace with how you respond." },
+  { letter: "T", title: "Transcendence Goal", desc: "Sustained metabolic flexibility, deep resilience and steady energy." },
+];
+
 export default function Home() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
   const [reels, setReels] = useState<any[]>(INSTAGRAM_REELS);
   const reelsScrollRef = useRef<HTMLDivElement>(null);
-
-  // Mouse coordinate tracker for cursor glow
-  const [mousePos, setMousePos] = useState({ x: -500, y: -500 });
-
-  // Quick 60-second baseline audit strip state
-  const [quickPillar, setQuickPillar] = useState<'gut' | 'bolt' | 'hormone'>('gut');
-  const [quickAnswers, setQuickAnswers] = useState<number[]>([25, 25, 25]);
-  const [quickScoreCalculated, setQuickScoreCalculated] = useState<boolean>(false);
 
   // Diagnostic Audit Modal State
   const [activeAuditType, setActiveAuditType] = useState<string | null>(null);
@@ -224,15 +281,6 @@ export default function Home() {
       text: "Hello, I am Reshmi's Clinical Wellness Assistant 🌿 Ask me anything regarding functional nutrition, 4-7-8 breathwork protocols, blood biomarkers, or hormone optimization.",
     },
   ]);
-
-  // Track cursor position
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
 
   // Load backend reels if present
   useEffect(() => {
@@ -314,6 +362,10 @@ export default function Home() {
     return Math.round(auditAnswers.reduce((a, b) => a + b, 0));
   };
 
+  const scrollToAuditHub = () => {
+    document.getElementById('audit-hub')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
     const newHistory = [...chatHistory, { role: "user", text: chatInput }];
@@ -323,7 +375,7 @@ export default function Home() {
 
     setTimeout(() => {
       let reply = `In clinical ${chatMode} analysis: optimizing this pathway requires synchronizing cellular nutrient density with autonomic vagal regulation. I recommend scheduling a comprehensive clinical biomarker consult with Reshmi.`;
-      
+
       const lower = userQ.toLowerCase();
       if (lower.includes('insulin') || lower.includes('sugar') || lower.includes('glucose')) {
         reply = "Clinical Insulin Note: Fasting insulin is a 5-10 year early indicator of metabolic dysregulation before HbA1c shifts. Target optimal fasting insulin is <5 µIU/mL. Paired with 10-minute post-meal vagal pacing, glucose clearance increases by up to 24%.";
@@ -342,821 +394,283 @@ export default function Home() {
     }, 600);
   };
 
+  const phaseDuration = breathePhase === 'inhale' ? 4 : breathePhase === 'hold' ? 7 : 8;
+  const orbScale = isBreatheActive
+    ? breathePhase === 'inhale' ? [1, 1.25] : breathePhase === 'hold' ? 1.25 : [1.25, 1]
+    : [1, 1.04, 1];
+
   return (
-    <div className="bg-[#FAF8F5] dark:bg-[#1A110D] text-[#2A1B14] dark:text-[#FAF8F5] min-h-screen selection:bg-[#D48464] selection:text-white transition-colors duration-300 relative overflow-hidden">
-      
-      {/* =========================================================================
-          INTERACTIVE AMBIENT CANVAS & PERSISTENT STAGE
-          ========================================================================= */}
-      <AmbientCanvas isBreathing={isBreatheActive} breathePhase={breathePhase} />
+    <div className="bg-canvas text-ink min-h-screen selection:bg-terracotta selection:text-white">
 
-      <div className="stage" aria-hidden="true">
-        <div className="blob" id="bJade"></div>
-        <div className="blob" id="bCoral"></div>
-        <div className="blob" id="bGold"></div>
-      </div>
+      {/* =====================================================================
+          HERO · full-width editorial portrait, serif headline, two CTAs
+          ===================================================================== */}
+      <section className="pt-[72px]">
+        <div className={`${CONTAINER} px-5 sm:px-8 pt-5 sm:pt-6`}>
+          <div className="relative rounded-2xl overflow-hidden min-h-[540px] lg:min-h-[640px] flex items-center bg-surface">
+            <img
+              src={HERO_IMAGE}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover object-right"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-canvas via-canvas/85 to-canvas/10 lg:via-canvas/55 lg:to-transparent" />
 
-      <div className="field" aria-hidden="true"></div>
-      <div className="grain" aria-hidden="true"></div>
+            <div className="relative px-6 sm:px-12 lg:px-16 py-14 max-w-[760px]">
+              <h1 className="font-serif font-light uppercase text-[38px] sm:text-[52px] lg:text-[60px] leading-[1.06] tracking-[0.01em] text-ink">
+                Real science.
+                <br />
+                Deep breathwork.
+                <br />
+                Sustainable vitality.
+              </h1>
 
-      {/* Dynamic Cursor Glow Aura */}
-      <div 
-        className="cursor-glow hidden md:block" 
-        style={{ left: mousePos.x, top: mousePos.y }}
-        aria-hidden="true"
-      />
+              <p className={`${BODY} max-w-[480px] mt-6`}>
+                Clinical nutrition and somatic breathwork, decoded beyond symptoms: from laboratory diagnostics to nervous-system restoration.
+              </p>
 
-      {/* =========================================================================
-          HERO SECTION (SCENE 0) · EDITORIAL ARCH PORTRAIT & DUAL CTAS
-          ========================================================================= */}
-      <section className="pt-36 pb-20 md:pt-44 md:pb-28 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          
-          {/* Hero Left: Editorial Typography & Exact Buttons from Specification */}
-          <div className="lg:col-span-7 flex flex-col items-start text-left">
-            
-            {/* Eyebrow Pill Tag */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#EFECE6]/90 dark:bg-[#2E2019]/90 text-[#2A1B14] dark:text-[#E6D7CD] text-[10px] sm:text-[11px] font-sans font-bold tracking-[0.22em] uppercase mb-6 border border-[#2A1B14]/12 dark:border-white/12 backdrop-blur-md shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-[#D48464] animate-pulse"></span>
-              <span>INTEGRATIVE FUNCTIONAL WELLNESS // RESHMI VERMA</span>
-            </div>
-
-            {/* Headline matching snapshot */}
-            <h1 className="font-sans font-black text-4xl sm:text-5xl lg:text-[4.2rem] tracking-tight leading-[1.05] text-[#2A1B14] dark:text-[#FAF8F5] mb-6 uppercase">
-              REAL SCIENCE.
-              <br />
-              <span className="text-[#D48464] italic">DEEP BREATHWORK.</span>
-              <br />
-              SUSTAINABLE VITALITY.
-            </h1>
-
-            <p className="text-base sm:text-lg text-[#564238] dark:text-[#E6D7CD] font-normal leading-relaxed max-w-xl mb-9">
-              Clinical nutritional biochemistry and somatic autonomic regulation decoded beyond superficial symptoms. Bridging laboratory diagnostics with nervous system restoration.
-            </p>
-
-            {/* Exact Buttons from Specification Sheet:
-                1. TAKE FREE ASSESSMENT (Terracotta #D48464 solid)
-                2. APPLY FOR 1:1 CARE (Espresso Outline #2A1B14)
-            */}
-            <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
-              <button
-                onClick={() => {
-                  const hub = document.getElementById('audit-hub');
-                  if (hub) hub.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#D48464] hover:bg-[#C27354] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-lg shadow-[#D48464]/30 hover:scale-[1.02] transition-all cursor-pointer text-center"
-              >
-                TAKE FREE ASSESSMENT
-              </button>
-
-              <button
-                onClick={() => navigate('/booking')}
-                className="w-full sm:w-auto px-8 py-4 rounded-full border-2 border-[#2A1B14] dark:border-[#FAF8F5] text-[#2A1B14] dark:text-[#FAF8F5] hover:bg-[#2A1B14] hover:text-[#FAF8F5] dark:hover:bg-[#FAF8F5] dark:hover:text-[#2A1B14] text-xs font-bold uppercase tracking-[0.16em] transition-all cursor-pointer text-center backdrop-blur-sm"
-              >
-                APPLY FOR 1:1 CARE
-              </button>
-            </div>
-
-            {/* Clinical Trust Bar */}
-            <div className="flex flex-wrap items-center gap-6 sm:gap-10 pt-10 mt-10 border-t border-[#2A1B14]/12 dark:border-white/12 w-full text-left">
-              <div>
-                <strong className="block text-2xl sm:text-3xl font-serif font-bold text-[#2A1B14] dark:text-white">50+</strong>
-                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#7E685D] dark:text-white/60">Biomarkers Tracked</span>
-              </div>
-              <div className="w-px h-8 bg-[#2A1B14]/12 dark:bg-white/12 hidden sm:block" />
-              <div>
-                <strong className="block text-2xl sm:text-3xl font-serif font-bold text-[#2A1B14] dark:text-white">17+</strong>
-                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#7E685D] dark:text-white/60">Years in Practice</span>
-              </div>
-              <div className="w-px h-8 bg-[#2A1B14]/12 dark:bg-white/12 hidden sm:block" />
-              <div>
-                <strong className="block text-2xl sm:text-3xl font-serif font-bold text-[#D48464]">27-Yr</strong>
-                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#7E685D] dark:text-white/60">Diagnostic Legacy</span>
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-9">
+                <button onClick={scrollToAuditHub} className={BTN_PRIMARY}>
+                  Take free assessment
+                </button>
+                <button onClick={() => navigate('/booking')} className={BTN_OUTLINE}>
+                  Apply for 1:1 care
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Hero Right: ARCH EDITORIAL PORTRAIT OF RESHMI VERMA WITH ROTATING HALO & FLOATING BADGES */}
-          <div className="lg:col-span-5 relative flex justify-center">
-            <div className="portrait-wrap max-w-sm sm:max-w-md">
-              
-              {/* Spinning Conic Gradient Halo */}
-              <div className="halo" />
-
-              {/* The Arch Portrait Element */}
-              <div className="portrait">
-                <img
-                  src="/IMG_5514-scaled-e1762270577699.jpg"
-                  alt="Reshmi Verma - Functional Nutritionist & Somatic Breathwork Specialist"
-                  className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
-                />
-                
-                {/* Subtle gradient scrim */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1A110D]/85 via-transparent to-transparent pointer-events-none" />
-                
-                {/* Bottom Credential Tag */}
-                <div className="absolute bottom-5 left-5 right-5 text-white text-left pointer-events-none">
-                  <span className="text-[9px] font-mono tracking-widest uppercase text-[#FAF8F5]/90 block mb-1">
-                    DIRECTOR · RAINBOW MEDINOVA
-                  </span>
-                  <p className="font-serif text-lg font-bold text-white leading-snug">
-                    Reshmi Verma
-                  </p>
-                  <p className="text-xs text-[#EFECE6]/90 font-light mt-0.5">
-                    Decades of clinical diagnostics meeting cellular nutrition
-                  </p>
-                </div>
+          {/* Quiet trust row */}
+          <dl className="grid grid-cols-3 gap-4 mt-8 sm:mt-10 text-center sm:text-left">
+            {[
+              ["50+", "Biomarkers tracked"],
+              ["17+", "Years in practice"],
+              ["27-Yr", "Diagnostic legacy"],
+            ].map(([num, label]) => (
+              <div key={label} className="sm:px-6 sm:border-l first:border-l-0 border-line">
+                <dt className="font-serif font-light text-[28px] sm:text-[36px] text-ink leading-none">{num}</dt>
+                <dd className="mt-2 text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-faint">{label}</dd>
               </div>
-
-              {/* Float Card 1: Top Left */}
-              <div className="float-card fc1 hidden sm:block">
-                <div className="t font-serif">50+ Biomarkers</div>
-                <div className="s font-sans text-xs">Cellular Lab Diagnostics</div>
-              </div>
-
-              {/* Float Card 2: Bottom Right */}
-              <div className="float-card fc2 hidden sm:block">
-                <div className="t font-serif">1:1 Clinical Care</div>
-                <div className="s font-sans text-xs flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>Accepting Consultations</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
+            ))}
+          </dl>
         </div>
       </section>
 
-      {/* =========================================================================
-          SECTION 1: SPECIALISED PATHWAYS (Three Pillars)
-          ========================================================================= */}
-      <section id="pathways" className="py-20 md:py-28 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto border-t border-[#2A1B14]/10 dark:border-white/10 relative z-10">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EFECE6] dark:bg-[#2E2019] text-[#7E685D] dark:text-[#E6D7CD] text-[10px] font-sans font-bold tracking-[0.22em] uppercase mb-4 border border-[#2A1B14]/10">
-            SPECIALISED PATHWAYS
-          </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-[#2A1B14] dark:text-white tracking-tight">
-            Three Pillars of <em>Clinical Transformation</em>
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-          
-          {/* Pathway 1: Fit with Reshmi */}
-          <div 
-            onClick={() => navigate('/booking')}
-            className="bg-[#EFECE6]/85 dark:bg-[#251913]/85 backdrop-blur-md border border-[#2A1B14]/10 dark:border-white/10 p-8 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-[#D48464] transition-all group cursor-pointer flex flex-col justify-between"
-          >
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#7E685D] dark:text-white/60 font-bold block mb-2">
-                PATHWAY 01
-              </span>
-              <h3 className="font-serif text-2xl font-bold text-[#2A1B14] dark:text-white mb-3 group-hover:text-[#D48464] transition-colors">
-                Fit with Reshmi
-              </h3>
-              <p className="text-sm text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-6 font-normal">
-                Clinical movement and metabolic conditioning. Address the root cause of chronic inflammation, postural stagnation, and physical resilience.
-              </p>
-            </div>
-            <div className="text-xs font-bold uppercase tracking-widest text-[#2A1B14] dark:text-white flex items-center gap-2 group-hover:text-[#D48464] transition-colors">
-              Explore Practice <span>→</span>
-            </div>
-          </div>
-
-          {/* Pathway 2: Breathe with Reshmi */}
-          <div 
-            onClick={() => navigate('/breathe')}
-            className="bg-[#EFECE6]/85 dark:bg-[#251913]/85 backdrop-blur-md border border-[#2A1B14]/10 dark:border-white/10 p-8 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-[#D48464] transition-all group cursor-pointer flex flex-col justify-between relative overflow-hidden"
-          >
-            <div className="absolute top-4 right-4 px-2.5 py-0.5 rounded-full bg-[#D48464]/15 border border-[#D48464]/30 text-[9px] font-mono font-bold text-[#D48464]">
-              4-7-8 Somatic
-            </div>
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#7E685D] dark:text-white/60 font-bold block mb-2">
-                PATHWAY 02
-              </span>
-              <h3 className="font-serif text-2xl font-bold text-[#D48464] mb-3 group-hover:scale-[1.02] transition-transform origin-left">
-                Breathe with Reshmi
-              </h3>
-              <p className="text-sm text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-6 font-normal">
-                Somatic regulation and parasympathetic recovery. Guided cadence breathwork with immersive ambient AI atmospheres to restore neurological calm.
-              </p>
-            </div>
-            <div className="text-xs font-bold uppercase tracking-widest text-[#2A1B14] dark:text-white flex items-center gap-2 group-hover:text-[#D48464] transition-colors">
-              Start Breathing (4-7-8) <span>→</span>
-            </div>
-          </div>
-
-          {/* Pathway 3: Nutrition with Reshmi */}
-          <div 
-            onClick={() => navigate('/nutrition')}
-            className="bg-[#EFECE6]/85 dark:bg-[#251913]/85 backdrop-blur-md border border-[#4D735D]/30 hover:border-[#4D735D] p-8 rounded-[2rem] shadow-sm hover:shadow-xl transition-all group cursor-pointer flex flex-col justify-between relative overflow-hidden"
-          >
-            <div className="absolute top-4 right-4 px-2.5 py-0.5 rounded-full bg-[#4D735D]/15 border border-[#4D735D]/40 text-[9px] font-mono font-bold text-[#4D735D]">
-              Bio-Alchemy
-            </div>
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#4D735D] font-bold block mb-2">
-                PATHWAY 03
-              </span>
-              <h3 className="font-serif text-2xl font-bold text-[#4D735D] mb-3 group-hover:scale-[1.02] transition-transform origin-left">
-                Nutrition with Reshmi
-              </h3>
-              <p className="text-sm text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-6 font-normal">
-                Futuristic cellular biochemistry, gut microbiome alchemy, and circadian chrono-nutrition designed around your unique biological markers.
-              </p>
-            </div>
-            <div className="text-xs font-bold uppercase tracking-widest text-[#4D735D] flex items-center gap-2 group-hover:translate-x-1 transition-transform">
-              Explore Nutritive Alchemy <span>→</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* =========================================================================
-          SECTION 2: DIAGNOSTIC AUDIT HUB / THE BRIEF ASSESSMENT SUITE
-          ========================================================================= */}
-      <section id="audit-hub" className="py-20 md:py-28 bg-[#FAF8F5]/90 dark:bg-[#1A110D]/90 border-t border-[#2A1B14]/10 dark:border-white/10 px-4 sm:px-6 lg:px-12 relative z-10">
-        <div className="max-w-7xl mx-auto text-center">
-          
-          {/* Eyebrow and Italic Serif Title from Snapshot */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EFECE6] dark:bg-[#2E2019] text-[#7E685D] dark:text-[#E6D7CD] text-[10px] font-sans font-bold tracking-[0.22em] uppercase mb-4 border border-[#2A1B14]/10">
-            DIAGNOSTIC AUDIT HUB (PAGE 1)
-          </div>
-          
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif italic text-[#2A1B14] dark:text-[#FAF8F5] tracking-tight mb-4">
-            IDENTIFY YOUR HEALTH BASELINE
-          </h2>
-          
-          <p className="text-sm sm:text-base text-[#564238] dark:text-[#E6D7CD] max-w-2xl mx-auto mb-12 leading-relaxed font-normal">
-            Precision clinical self-assessments to pinpoint autonomic dysregulation, metabolic stagnation, and gut permeability before your formal consultation.
+      {/* =====================================================================
+          DIAGNOSTIC AUDIT HUB · three sandstone cards
+          ===================================================================== */}
+      <section id="audit-hub" className={SECTION}>
+        <div className={`${CONTAINER} text-center`}>
+          <p className={EYEBROW}>Diagnostic Audit Hub</p>
+          <h2 className={`${H2} italic mt-4`}>Identify your health baseline</h2>
+          <p className={`${BODY} max-w-[600px] mx-auto mt-5`}>
+            Short clinical self-assessments to pinpoint where your nervous system, metabolism and hormones need support, before your consultation.
           </p>
 
-          {/* Quick 60-Second Health Baseline Audit Strip */}
-          <div className="bg-white/80 dark:bg-[#251913]/90 border-2 border-[#D48464]/30 rounded-[2.5rem] p-6 sm:p-8 mb-14 shadow-lg backdrop-blur-md text-left">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#2A1B14]/10 dark:border-white/10 mb-6">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D48464] font-bold block mb-1">
-                  INSTANT CLINICAL TRIAGE
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mt-12 text-left">
+            {AUDIT_CARDS.map(({ key, icon: Icon, title, desc, cta }) => (
+              <button
+                key={key}
+                onClick={() => openAudit(key)}
+                className="group flex flex-col items-start bg-surface border border-line rounded-xl p-8 text-left transition-colors hover:border-terracotta cursor-pointer"
+              >
+                <Icon size={30} strokeWidth={1.25} className="text-ink" aria-hidden="true" />
+                <h3 className="font-serif font-normal text-[22px] leading-snug text-ink mt-8">{title}</h3>
+                <p className="text-[14px] leading-relaxed text-muted mt-3">{desc}</p>
+                <span className="mt-8 inline-flex items-center gap-2 text-[12px] font-semibold tracking-[0.12em] uppercase text-accent">
+                  {cta}
+                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
                 </span>
-                <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#2A1B14] dark:text-white">
-                  60-Second Health Baseline Audit
-                </h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setQuickPillar('gut')}
-                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    quickPillar === 'gut' 
-                      ? 'bg-[#D48464] text-white shadow-md' 
-                      : 'bg-[#EFECE6] dark:bg-[#1D130E] text-[#564238] dark:text-[#E6D7CD]'
-                  }`}
-                >
-                  Gut & Metabolism
-                </button>
-                <button
-                  onClick={() => setQuickPillar('bolt')}
-                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    quickPillar === 'bolt' 
-                      ? 'bg-[#D48464] text-white shadow-md' 
-                      : 'bg-[#EFECE6] dark:bg-[#1D130E] text-[#564238] dark:text-[#E6D7CD]'
-                  }`}
-                >
-                  Vagus & Breath
-                </button>
-                <button
-                  onClick={() => setQuickPillar('hormone')}
-                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    quickPillar === 'hormone' 
-                      ? 'bg-[#D48464] text-white shadow-md' 
-                      : 'bg-[#EFECE6] dark:bg-[#1D130E] text-[#564238] dark:text-[#E6D7CD]'
-                  }`}
-                >
-                  Hormones & Sleep
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {quickPillar === 'gut' && (
-                <>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">1. Post-Meal Energy Levels</p>
-                    <div className="space-y-1.5">
-                      {["Clean sustained energy", "Occasional mild slump", "Heavy daily crashes"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qg1" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[0] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">2. Evening Bloating Tendency</p>
-                    <div className="space-y-1.5">
-                      {["Flat and comfortable", "Occasional puffiness", "Chronic evening distension"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qg2" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[1] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">3. Intermittent Fasting Comfort</p>
-                    <div className="space-y-1.5">
-                      {["Effortless 4-5 hours", "Moderate hunger peaks", "Severe hangry sugar cravings"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qg3" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[2] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {quickPillar === 'bolt' && (
-                <>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">1. Breath Hold Comfort (BOLT)</p>
-                    <div className="space-y-1.5">
-                      {["> 30 seconds (High CO₂ tolerance)", "18-29s (Average)", "< 15s (Sympathetic stress)"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qb1" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[0] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">2. Daytime Nasal Breathing</p>
-                    <div className="space-y-1.5">
-                      {["100% nasal 24/7", "Occasionally mouth during stress", "Frequent mouth breathing"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qb2" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[1] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">3. Stress Recovery Speed</p>
-                    <div className="space-y-1.5">
-                      {["Calm within 2 minutes", "Takes 5-10 minutes", "Lingering elevated tension"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qb3" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[2] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {quickPillar === 'hormone' && (
-                <>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">1. Morning Alertness</p>
-                    <div className="space-y-1.5">
-                      {["Awake and alert instantly", "Need 10 mins and water", "Heavy fatigue / groggy"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qh1" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[0] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">2. Extremities Temperature</p>
-                    <div className="space-y-1.5">
-                      {["Always warm hands & feet", "Mild cold in winter", "Chronic icy cold extremities"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qh2" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[1] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#1D130E] border border-[#2A1B14]/10">
-                    <p className="text-xs font-bold text-[#2A1B14] dark:text-white mb-2">3. Sleep Quality & Rest</p>
-                    <div className="space-y-1.5">
-                      {["Deep uninterrupted 8 hours", "1 brief wake up", "Restless broken insomnia"].map((lbl, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-[#564238] dark:text-[#E6D7CD] cursor-pointer">
-                          <input type="radio" name="qh3" defaultChecked={i === 0} onChange={() => { const q = [...quickAnswers]; q[2] = 25 - i * 10; setQuickAnswers(q); }} />
-                          <span>{lbl}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-[#2A1B14]/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#7E685D] dark:text-white/60">Calculated Score:</span>
-                <strong className="text-xl font-bold text-[#D48464]">{Math.round((quickAnswers[0] + quickAnswers[1] + quickAnswers[2]) * 1.33)} / 100</strong>
-                <span className="text-[11px] px-2 py-0.5 rounded bg-[#D48464]/15 text-[#D48464] font-bold">
-                  {(quickAnswers[0] + quickAnswers[1] + quickAnswers[2]) >= 60 ? "Balanced Baseline" : "Subclinical Compensation"}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => openAudit(quickPillar)}
-                  className="px-6 py-2.5 rounded-full bg-[#2A1B14] dark:bg-white text-white dark:text-[#2A1B14] text-xs font-bold uppercase tracking-wider hover:scale-105 transition-all cursor-pointer"
-                >
-                  Launch Full Clinical Audit →
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 4 Clinical Diagnostic Cards on Subtle Soft Sandstone Clay (#EFECE6) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-            
-            {/* Card 1: Gut & Metabolic Flexibility */}
-            <div 
-              onClick={() => openAudit('gut')}
-              className="bg-[#EFECE6]/90 dark:bg-[#251913]/90 border border-[#2A1B14]/10 dark:border-white/10 p-7 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-[#D48464] transition-all group cursor-pointer flex flex-col justify-between"
-            >
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-black/30 border border-[#2A1B14]/10 dark:border-white/10 flex items-center justify-center text-[#D48464] mb-6 group-hover:scale-110 transition-transform">
-                  <Activity size={24} strokeWidth={1.5} />
-                </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#7E685D] dark:text-white/60 font-bold block mb-2">
-                  AUDIT 01 · BIO-METABOLIC
-                </span>
-                <h3 className="font-serif text-xl font-bold text-[#2A1B14] dark:text-white mb-3">
-                  Gut & Metabolic Flexibility
-                </h3>
-                <p className="text-xs text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-6">
-                  Clinical assessment of intestinal mucosal permeability, postprandial glucose stability, and microbial short-chain fatty acids.
-                </p>
-                <div className="flex flex-wrap gap-1.5 mb-6">
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">Fasting Insulin</span>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">Zonulin Barrier</span>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">SCFA Butyrate</span>
-                </div>
-              </div>
-              <div className="text-xs font-bold uppercase tracking-widest text-[#D48464] flex items-center gap-2 group-hover:translate-x-1 transition-transform">
-                Take Free Assessment <span>→</span>
-              </div>
-            </div>
-
-            {/* Card 2: BOLT Score & Vagus Nerve */}
-            <div 
-              onClick={() => openAudit('bolt')}
-              className="bg-[#EFECE6]/90 dark:bg-[#251913]/90 border border-[#2A1B14]/10 dark:border-white/10 p-7 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-[#D48464] transition-all group cursor-pointer flex flex-col justify-between"
-            >
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-black/30 border border-[#2A1B14]/10 dark:border-white/10 flex items-center justify-center text-[#D48464] mb-6 group-hover:scale-110 transition-transform">
-                  <Timer size={24} strokeWidth={1.5} />
-                </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#7E685D] dark:text-white/60 font-bold block mb-2">
-                  AUDIT 02 · SOMATIC RESPIRATION
-                </span>
-                <h3 className="font-serif text-xl font-bold text-[#2A1B14] dark:text-white mb-3">
-                  BOLT Score & Vagus Nerve
-                </h3>
-                <p className="text-xs text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-6">
-                  Clinical measurement of carbon dioxide tolerance, baroreceptor sensitivity, and vagal tone efferent strength through breath coordinates.
-                </p>
-                <div className="flex flex-wrap gap-1.5 mb-6">
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">CO₂ Tolerance</span>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">0.1 Hz HRV</span>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">Vagal Pacing</span>
-                </div>
-              </div>
-              <div className="text-xs font-bold uppercase tracking-widest text-[#D48464] flex items-center gap-2 group-hover:translate-x-1 transition-transform">
-                Measure BOLT Score <span>→</span>
-              </div>
-            </div>
-
-            {/* Card 3: Hormonal & Lifestyle Restoration */}
-            <div 
-              onClick={() => openAudit('hormone')}
-              className="bg-[#EFECE6]/90 dark:bg-[#251913]/90 border border-[#2A1B14]/10 dark:border-white/10 p-7 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-[#D48464] transition-all group cursor-pointer flex flex-col justify-between"
-            >
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-black/30 border border-[#2A1B14]/10 dark:border-white/10 flex items-center justify-center text-[#4D735D] mb-6 group-hover:scale-110 transition-transform">
-                  <Dna size={24} strokeWidth={1.5} />
-                </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#7E685D] dark:text-white/60 font-bold block mb-2">
-                  AUDIT 03 · ENDOCRINE CURVE
-                </span>
-                <h3 className="font-serif text-xl font-bold text-[#2A1B14] dark:text-white mb-3">
-                  Hormonal Restoration
-                </h3>
-                <p className="text-xs text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-6">
-                  Clinical evaluation of circadian diurnal cortisol, thyroid active T3 conversion, and autonomic sleep architecture integrity.
-                </p>
-                <div className="flex flex-wrap gap-1.5 mb-6">
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">Cortisol Awakening</span>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">Thyroid Axis</span>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">Deep Wave</span>
-                </div>
-              </div>
-              <div className="text-xs font-bold uppercase tracking-widest text-[#4D735D] flex items-center gap-2 group-hover:translate-x-1 transition-transform">
-                Take Hormone Audit <span>→</span>
-              </div>
-            </div>
-
-            {/* Card 4: Sleep Architecture & STOP-BANG */}
-            <div 
-              onClick={() => openAudit('sleep')}
-              className="bg-[#EFECE6]/90 dark:bg-[#251913]/90 border border-[#2A1B14]/10 dark:border-white/10 p-7 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-[#D48464] transition-all group cursor-pointer flex flex-col justify-between"
-            >
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-black/30 border border-[#2A1B14]/10 dark:border-white/10 flex items-center justify-center text-[#D48464] mb-6 group-hover:scale-110 transition-transform">
-                  <Moon size={24} strokeWidth={1.5} />
-                </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#7E685D] dark:text-white/60 font-bold block mb-2">
-                  AUDIT 04 · AIRWAY RESILIENCE
-                </span>
-                <h3 className="font-serif text-xl font-bold text-[#2A1B14] dark:text-white mb-3">
-                  STOP-BANG Sleep Audit
-                </h3>
-                <p className="text-xs text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-6">
-                  Clinical screening for nocturnal upper airway resistance, intermittent hypoxia, and sympathetic night surges.
-                </p>
-                <div className="flex flex-wrap gap-1.5 mb-6">
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">Airway Collapse</span>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">O2 Saturation</span>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/70 dark:bg-black/30 text-[#2A1B14] dark:text-white/80">Sleep Arousals</span>
-                </div>
-              </div>
-              <div className="text-xs font-bold uppercase tracking-widest text-[#D48464] flex items-center gap-2 group-hover:translate-x-1 transition-transform">
-                Check Sleep Risk <span>→</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          SECTION 3: "Breathe Now" SOMATIC FEATURE per Specification Sheet
-          ========================================================================= */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto relative z-10">
-        <div className="bg-[#2A1B14] text-[#FAF8F5] rounded-[3rem] p-8 sm:p-12 lg:p-16 shadow-2xl relative overflow-hidden border border-[#D48464]/30">
-          
-          {/* Subtle Ambient Radial Light */}
-          <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-radial from-[#D48464]/20 via-transparent to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-radial from-[#4D735D]/15 via-transparent to-transparent rounded-full blur-3xl pointer-events-none" />
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-            
-            {/* Left Column: Titles and Controls */}
-            <div className="lg:col-span-6 text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D48464]/20 border border-[#D48464]/40 text-[#D48464] text-[10px] font-mono font-bold tracking-[0.2em] uppercase mb-4">
-                SOMATIC FEATURE
-              </div>
-
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-light tracking-tight text-white mb-2">
-                "Breathe Now"
-              </h2>
-              <p className="text-xl sm:text-2xl font-serif italic text-[#D48464] mb-4">
-                Somatic Feature
-              </p>
-              
-              <p className="text-sm sm:text-base text-[#E2CEC4] leading-relaxed max-w-lg mb-8">
-                Visual guided 4-7-8 breathing pacer. 4s gentle inhale, 7s oxygen suspension, 8s slow vagal exhale. Reset your autonomic nervous system in real time through clinical vagal entrainment.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-4 mb-8">
-                <button
-                  onClick={toggleHomeBreathe}
-                  className="px-8 py-4 rounded-full bg-gradient-to-r from-[#D48464] to-[#E09273] hover:scale-105 text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-[#D48464]/40 transition-all cursor-pointer flex items-center gap-2.5"
-                >
-                  {isBreatheActive ? <Pause size={16} /> : <Play size={16} className="fill-current" />}
-                  <span>{isBreatheActive ? 'PAUSE 4-7-8 SESSION' : 'BREATHE NOW (4-7-8)'}</span>
-                </button>
-
-                <button
-                  onClick={resetHomeBreathe}
-                  className="px-4 py-4 rounded-full border border-white/20 hover:bg-white/10 text-white transition-all cursor-pointer"
-                  title="Reset counter"
-                >
-                  <RotateCcw size={16} />
-                </button>
-              </div>
-
-              {/* Telemetry Indicator */}
-              <div className="flex items-center gap-6 pt-4 border-t border-white/10 text-xs font-mono text-[#E2CEC4]">
-                <div>
-                  <span className="text-[10px] text-white/50 block">CYCLES COMPLETED</span>
-                  <strong className="text-lg font-bold text-[#D48464]">{breatheCycles}</strong>
-                </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div>
-                  <span className="text-[10px] text-white/50 block">CADENCE TARGET</span>
-                  <strong className="text-sm font-bold text-white">4s Inhale · 7s Hold · 8s Exhale</strong>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <Link
-                  to="/breathe"
-                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#D48464] hover:text-white transition-colors"
-                >
-                  <span>Open Full Sanctuary with Ambient AI Video Atmospheres</span>
-                  <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
-
-            {/* Right Column: ORGANIC ORB WIDGET WITH "4-7-8" PER SNAPSHOT */}
-            <div className="lg:col-span-6 flex items-center justify-center">
-              <div className="relative w-72 sm:w-88 h-72 sm:h-88 flex items-center justify-center">
-                
-                {/* Organic Liquid Aura */}
-                <motion.div
-                  animate={{
-                    scale: isBreatheActive
-                      ? breathePhase === 'inhale' ? [1, 1.45]
-                        : breathePhase === 'hold' ? 1.45
-                        : [1.45, 1]
-                      : [1, 1.08, 1],
-                    opacity: isBreatheActive ? 0.7 : 0.3
-                  }}
-                  transition={{
-                    duration: isBreatheActive ? (breathePhase === 'inhale' ? 4 : breathePhase === 'hold' ? 7 : 8) : 3,
-                    ease: "easeInOut",
-                    repeat: isBreatheActive ? 0 : Infinity
-                  }}
-                  className="absolute inset-0 rounded-full bg-radial from-[#D48464]/30 via-[#D48464]/10 to-transparent blur-2xl pointer-events-none"
-                />
-
-                {/* Rotating concentric fluid lines */}
-                <motion.div
-                  animate={{
-                    rotate: [0, 360],
-                    scale: isBreatheActive
-                      ? breathePhase === 'inhale' ? [1, 1.25]
-                        : breathePhase === 'hold' ? 1.25
-                        : [1.25, 1]
-                      : 1.05
-                  }}
-                  transition={{
-                    rotate: { duration: 20, repeat: Infinity, ease: "linear" },
-                    scale: { duration: isBreatheActive ? (breathePhase === 'inhale' ? 4 : breathePhase === 'hold' ? 7 : 8) : 2, ease: "easeInOut" }
-                  }}
-                  className="absolute inset-4 border border-[#D48464]/35 rounded-full"
-                />
-                
-                <motion.div
-                  animate={{
-                    rotate: [360, 0],
-                    scale: isBreatheActive
-                      ? breathePhase === 'inhale' ? [1, 1.15]
-                        : breathePhase === 'hold' ? 1.15
-                        : [1.15, 1]
-                      : 1.0
-                  }}
-                  transition={{
-                    rotate: { duration: 28, repeat: Infinity, ease: "linear" },
-                    scale: { duration: isBreatheActive ? (breathePhase === 'inhale' ? 4 : breathePhase === 'hold' ? 7 : 8) : 2, ease: "easeInOut" }
-                  }}
-                  className="absolute inset-10 border border-dashed border-[#D48464]/25 rounded-full"
-                />
-
-                {/* The Central Organic Orb */}
-                <motion.div
-                  animate={{
-                    scale: isBreatheActive
-                      ? breathePhase === 'inhale' ? [1, 1.3]
-                        : breathePhase === 'hold' ? 1.3
-                        : [1.3, 1]
-                      : [1, 1.05, 1],
-                    borderRadius: isBreatheActive
-                      ? ["50%", "45% 55% 52% 48% / 54% 48% 52% 46%", "50%"]
-                      : "50%"
-                  }}
-                  transition={{
-                    duration: isBreatheActive ? (breathePhase === 'inhale' ? 4 : breathePhase === 'hold' ? 7 : 8) : 3,
-                    ease: "easeInOut",
-                    repeat: isBreatheActive ? 0 : Infinity
-                  }}
-                  onClick={toggleHomeBreathe}
-                  className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-gradient-to-tr from-[#1D120C] via-[#3A2218] to-[#543021] border-2 border-[#D48464] shadow-[0_0_50px_rgba(212,132,100,0.45)] flex flex-col items-center justify-center cursor-pointer p-4 select-none hover:border-white transition-colors"
-                >
-                  <span className="text-[10px] font-mono tracking-widest uppercase text-[#D48464] font-bold block mb-1">
-                    {isBreatheActive ? (breathePhase === 'inhale' ? 'INHALE' : breathePhase === 'hold' ? 'HOLD O2' : 'SLOW EXHALE') : 'SOMATIC CADENCE'}
-                  </span>
-                  
-                  {/* Center "4-7-8" exactly as shown in snapshot */}
-                  <span className="text-4xl sm:text-5xl font-serif font-black tracking-tight text-white block my-1">
-                    {isBreatheActive ? breatheSeconds : '4-7-8'}
-                  </span>
-
-                  <span className="text-[9px] font-sans uppercase tracking-widest text-[#E2CEC4] font-bold block">
-                    {isBreatheActive ? 'VAGAL ENTRAINMENT' : 'CLICK TO START'}
-                  </span>
-                </motion.div>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          SECTION 4: THE RESET METHODOLOGY (Clinical Evolution)
-          ========================================================================= */}
-      <section id="method" className="py-20 md:py-28 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto border-t border-[#2A1B14]/10 dark:border-white/10 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          <div className="lg:col-span-5 text-left">
-            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D48464] font-bold block mb-3">
-              THE RESET METHODOLOGY
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-serif text-[#2A1B14] dark:text-white mb-6 tracking-tight leading-tight">
-              A clinical protocol that <em>evolves</em> with you.
-            </h2>
-            <p className="text-base text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-8">
-              Care shouldn't sit still. Yours adapts as your labs, hormonal status, and lifestyle shift through precision biometric feedback.
-            </p>
-            <button
-              onClick={() => navigate('/booking')}
-              className="px-8 py-3.5 rounded-full bg-[#2A1B14] text-white dark:bg-white dark:text-[#2A1B14] text-xs font-bold uppercase tracking-wider shadow-md hover:scale-105 transition-all cursor-pointer"
-            >
-              Consult Clinical Specialist →
-            </button>
-          </div>
-
-          <div className="lg:col-span-7 space-y-4 text-left">
-            {[
-              { letter: 'R', title: 'Reports-Led Precision', desc: 'Scan up to 50 active molecular biomarkers to track hormonal and metabolic pathways without guesswork.' },
-              { letter: 'E', title: 'Element Nutrition', desc: 'Direct-feed microelement nutrients and anti-inflammatory polyphenol density tailored to cellular labs.' },
-              { letter: 'S', title: 'Somatic Breath Pacing', desc: 'Integrated 4-7-8 and resonance regulators that lower serum cortisol and stabilize autonomic HRV.' },
-              { letter: 'E', title: 'Evaluation Loop', desc: 'Biweekly biometric clinical evaluations ensuring continuous metabolic recalibration.' },
-              { letter: 'T', title: 'Transcendence Goal', desc: 'Sustained metabolic flexibility, deep cellular resilience, and restorative energetic freedom.' }
-            ].map((step, idx) => (
-              <div key={idx} className="p-5 rounded-2xl bg-[#EFECE6]/85 dark:bg-[#251913]/85 backdrop-blur-sm border border-[#2A1B14]/10 dark:border-white/10 flex items-start gap-4 hover:border-[#D48464] transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-black/30 font-serif font-black text-xl text-[#D48464] flex items-center justify-center shrink-0 border border-[#2A1B14]/10 dark:border-white/10">
-                  {step.letter}
-                </div>
-                <div>
-                  <h4 className="font-serif font-bold text-base text-[#2A1B14] dark:text-white mb-1">
-                    {step.title}
-                  </h4>
-                  <p className="text-xs sm:text-sm text-[#564238] dark:text-[#E6D7CD] leading-relaxed">
-                    {step.desc}
-                  </p>
-                </div>
-              </div>
+              </button>
             ))}
           </div>
 
+          <button
+            onClick={() => openAudit('sleep')}
+            className="mt-8 text-[13px] text-muted hover:text-ink underline underline-offset-4 decoration-line hover:decoration-terracotta cursor-pointer"
+          >
+            Also available: Sleep &amp; airway check (STOP-BANG)
+          </button>
         </div>
       </section>
 
-      {/* =========================================================================
-          SECTION 5: INTELLIGENT CLINICAL AI LAB COMPANION
-          ========================================================================= */}
-      <section id="ai-lab" className="py-20 md:py-28 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto border-t border-[#2A1B14]/10 dark:border-white/10 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center text-left">
-          
-          <div className="lg:col-span-5">
-            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D48464] font-bold block mb-3">
-              INTELLIGENT LAB COMPANION
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-serif text-[#2A1B14] dark:text-white mb-6 tracking-tight leading-tight">
-              Clinical knowledge, <em>amplified by AI</em>.
+      {/* =====================================================================
+          "BREATHE NOW" · espresso band with 4-7-8 ring
+          ===================================================================== */}
+      <section className="bg-band text-linen">
+        <div className={`${CONTAINER} ${SECTION} grid grid-cols-1 lg:grid-cols-2 gap-14 items-center`}>
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.22em] uppercase text-terracotta">Somatic feature</p>
+            <h2 className="font-serif font-light text-[40px] sm:text-[52px] lg:text-[60px] leading-[1.05] tracking-tight mt-4">
+              “Breathe Now”
             </h2>
-            <p className="text-base text-[#564238] dark:text-[#E6D7CD] leading-relaxed mb-6">
-              A thoughtful clinical toolkit for my community — query any biomarker, simulate cycle-synced nutrition, or decode autonomic nervous system cues.
+            <p className="font-serif italic font-light text-[22px] sm:text-[26px] text-terracotta mt-2">
+              A guided 4-7-8 pacer
             </p>
-            <div className="p-4 rounded-2xl bg-[#EFECE6]/85 dark:bg-[#251913]/85 backdrop-blur-sm border border-[#2A1B14]/10 text-xs text-[#564238] dark:text-[#E6D7CD] space-y-2">
-              <p>✓ <strong>Biomarker Translator</strong>: Converts clinical labs into plain language</p>
-              <p>✓ <strong>Circadian Sync</strong>: Meal timing aligned with solar glucose absorption</p>
-              <p>✓ <strong>Somatic Diagnostics</strong>: Personalized 4-7-8 breathing recommendations</p>
+            <p className="text-[16px] sm:text-[17px] leading-relaxed text-linen/75 max-w-[460px] mt-6">
+              Four seconds in, seven held, eight out. A slow, guided rhythm that settles your nervous system in a few minutes, wherever you are.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 mt-9">
+              <button onClick={toggleHomeBreathe} className={BTN_PRIMARY}>
+                {isBreatheActive ? <Pause size={14} /> : <Play size={14} className="fill-current" />}
+                {isBreatheActive ? 'Pause session' : 'Breathe now'}
+              </button>
+              <button
+                onClick={resetHomeBreathe}
+                className="p-3.5 rounded-md border border-linen/25 text-linen hover:bg-linen/10 transition-colors cursor-pointer"
+                aria-label="Reset counter"
+              >
+                <RotateCcw size={15} />
+              </button>
+              <span className="text-[12px] text-linen/60 ml-1" aria-live="polite">
+                {breatheCycles} {breatheCycles === 1 ? 'cycle' : 'cycles'} completed
+              </span>
             </div>
+
+            <Link
+              to="/breathe"
+              className="inline-flex items-center gap-2 mt-8 text-[12px] font-semibold tracking-[0.12em] uppercase text-terracotta hover:text-linen transition-colors no-underline"
+            >
+              Open the full breathing sanctuary <ArrowRight size={14} />
+            </Link>
           </div>
 
-          <div className="lg:col-span-7 bg-white/90 dark:bg-[#251913]/90 backdrop-blur-md border border-[#2A1B14]/12 dark:border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-xl">
-            <div className="flex items-center justify-between pb-4 border-b border-[#2A1B14]/10 dark:border-white/10 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#D48464] animate-pulse"></span>
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#2A1B14] dark:text-white">
-                  Reshmi's Clinical AI Assistant
+          <div className="flex items-center justify-center">
+            <div className="relative w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] flex items-center justify-center">
+              <motion.div
+                aria-hidden="true"
+                animate={{ scale: orbScale, opacity: isBreatheActive ? 0.9 : 0.5 }}
+                transition={{
+                  duration: isBreatheActive ? phaseDuration : 3,
+                  ease: "easeInOut",
+                  repeat: isBreatheActive ? 0 : Infinity,
+                }}
+                className="absolute inset-0 rounded-full bg-radial from-terracotta/35 via-terracotta/10 to-transparent blur-2xl"
+              />
+              <motion.button
+                onClick={toggleHomeBreathe}
+                animate={{ scale: orbScale }}
+                transition={{
+                  duration: isBreatheActive ? phaseDuration : 3,
+                  ease: "easeInOut",
+                  repeat: isBreatheActive ? 0 : Infinity,
+                }}
+                aria-label={isBreatheActive ? 'Pause breathing session' : 'Start breathing session'}
+                className="relative w-[220px] h-[220px] sm:w-[260px] sm:h-[260px] rounded-full border border-terracotta/70 bg-[#2A1B14] shadow-[0_0_60px_rgba(212,132,100,0.35)] flex flex-col items-center justify-center select-none cursor-pointer"
+              >
+                <span className="text-[10px] tracking-[0.22em] uppercase text-terracotta font-semibold">
+                  {isBreatheActive ? (breathePhase === 'inhale' ? 'Inhale' : breathePhase === 'hold' ? 'Hold' : 'Exhale') : 'Somatic cadence'}
                 </span>
-              </div>
+                <span className="font-serif font-light text-[56px] sm:text-[64px] leading-none text-linen my-2">
+                  {isBreatheActive ? breatheSeconds : '4-7-8'}
+                </span>
+                <span className="text-[10px] tracking-[0.2em] uppercase text-linen/60">
+                  {isBreatheActive ? 'Vagal entrainment' : 'Tap to start'}
+                </span>
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          PATHWAYS · three ways to work together
+          ===================================================================== */}
+      <section id="pathways" className={SECTION}>
+        <div className={CONTAINER}>
+          <div className="text-center">
+            <p className={EYEBROW}>Specialised pathways</p>
+            <h2 className={`${H2} mt-4`}>
+              Three ways to work with <em>Reshmi</em>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mt-12">
+            {PATHWAYS.map((p) => (
+              <Link
+                key={p.title}
+                to={p.to}
+                className="group flex flex-col bg-surface border border-line rounded-xl p-8 no-underline transition-colors hover:border-terracotta"
+              >
+                <span className="text-[11px] tracking-[0.2em] uppercase text-faint">{p.label}</span>
+                <h3 className="font-serif font-normal text-[24px] text-ink mt-3">{p.title}</h3>
+                <p className="text-[14px] leading-relaxed text-muted mt-3 flex-1">{p.desc}</p>
+                <span className="mt-8 inline-flex items-center gap-2 text-[12px] font-semibold tracking-[0.12em] uppercase text-accent">
+                  {p.cta}
+                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          THE RESET METHOD
+          ===================================================================== */}
+      <section id="method" className={`${SECTION} bg-surface`}>
+        <div className={`${CONTAINER} grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start`}>
+          <div className="lg:col-span-5">
+            <p className={EYEBROW}>The RESET method</p>
+            <h2 className={`${H2} mt-4`}>
+              A clinical protocol that <em>evolves</em> with you.
+            </h2>
+            <p className={`${BODY} mt-6 max-w-[460px]`}>
+              Care shouldn't stand still. Yours adapts as your labs, hormones and lifestyle change.
+            </p>
+            <button onClick={() => navigate('/booking')} className={`${BTN_DARK} mt-9`}>
+              Book a consultation
+            </button>
+          </div>
+
+          <ol className="lg:col-span-7 divide-y divide-line border-y border-line">
+            {RESET_STEPS.map((step, idx) => (
+              <li key={idx} className="flex items-start gap-6 py-6">
+                <span className="font-serif font-light text-[40px] leading-none text-accent w-10 shrink-0">{step.letter}</span>
+                <div>
+                  <h3 className="font-serif font-normal text-[20px] text-ink">{step.title}</h3>
+                  <p className="text-[14px] sm:text-[15px] leading-relaxed text-muted mt-1.5">{step.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          AI LAB COMPANION
+          ===================================================================== */}
+      <section id="ai-lab" className={SECTION}>
+        <div className={`${CONTAINER} grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center`}>
+          <div className="lg:col-span-5">
+            <p className={EYEBROW}>Intelligent lab companion</p>
+            <h2 className={`${H2} mt-4`}>
+              Clinical knowledge, <em>amplified by AI</em>.
+            </h2>
+            <p className={`${BODY} mt-6`}>
+              Ask about a biomarker, plan cycle-synced meals, or decode what your nervous system is telling you.
+            </p>
+            <ul className="mt-8 space-y-3 text-[14px] text-muted">
+              <li className="flex gap-3"><Check size={16} className="text-agave mt-0.5 shrink-0" /><span><strong className="text-ink font-semibold">Biomarker translator:</strong> lab results in plain language</span></li>
+              <li className="flex gap-3"><Check size={16} className="text-agave mt-0.5 shrink-0" /><span><strong className="text-ink font-semibold">Circadian sync:</strong> meal timing aligned with your body clock</span></li>
+              <li className="flex gap-3"><Check size={16} className="text-agave mt-0.5 shrink-0" /><span><strong className="text-ink font-semibold">Somatic guidance:</strong> personalised 4-7-8 recommendations</span></li>
+            </ul>
+          </div>
+
+          <div className="lg:col-span-7 bg-card border border-line rounded-xl p-5 sm:p-7 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-line mb-4">
+              <span className="text-[12px] font-semibold tracking-[0.14em] uppercase text-ink">
+                Reshmi's Clinical AI Assistant
+              </span>
               <div className="flex gap-1.5">
                 {(['assistant', 'meal', 'symptom'] as const).map(mode => (
                   <button
                     key={mode}
                     onClick={() => setChatMode(mode)}
-                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                      chatMode === mode 
-                        ? 'bg-[#2A1B14] text-white dark:bg-white dark:text-[#2A1B14]' 
-                        : 'bg-[#EFECE6] dark:bg-[#1D130E] text-[#564238] dark:text-[#E6D7CD]'
+                    className={`px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wider uppercase transition-colors cursor-pointer ${
+                      chatMode === mode
+                        ? 'bg-ink text-canvas'
+                        : 'bg-surface text-muted hover:text-ink'
                     }`}
                   >
                     {mode}
@@ -1165,14 +679,14 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="h-60 overflow-y-auto space-y-3 pr-2 mb-4 scrollbar-thin">
+            <div className="h-60 overflow-y-auto space-y-3 pr-2 mb-4" aria-live="polite">
               {chatHistory.map((msg, i) => (
                 <div
                   key={i}
-                  className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed max-w-[85%] ${
-                    msg.role === 'bot' 
-                      ? 'bg-[#EFECE6] dark:bg-[#1D130E] text-[#2A1B14] dark:text-[#FAF8F5] mr-auto' 
-                      : 'bg-[#D48464] text-white ml-auto font-medium'
+                  className={`p-3.5 rounded-xl text-[13px] sm:text-sm leading-relaxed max-w-[85%] ${
+                    msg.role === 'bot'
+                      ? 'bg-surface text-ink mr-auto'
+                      : 'bg-terracotta text-white ml-auto'
                   }`}
                 >
                   {msg.text}
@@ -1187,157 +701,137 @@ export default function Home() {
                 onChange={e => setChatInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendChat()}
                 placeholder="Ask about fasting insulin, 4-7-8 breathwork, or gut healing…"
-                className="flex-1 px-4 py-3 rounded-full bg-[#FAF8F5] dark:bg-[#1A110D] border border-[#2A1B14]/15 dark:border-white/15 text-xs text-[#2A1B14] dark:text-white focus:outline-none focus:border-[#D48464]"
+                aria-label="Ask the assistant a question"
+                className="flex-1 min-w-0 px-4 py-3 rounded-md bg-canvas border border-line text-[13px] text-ink placeholder:text-faint focus:outline-none focus:border-terracotta"
               />
-              <button
-                onClick={handleSendChat}
-                className="px-6 py-3 rounded-full bg-[#2A1B14] dark:bg-[#D48464] text-white text-xs font-bold uppercase tracking-wider hover:scale-105 transition-transform cursor-pointer"
-              >
+              <button onClick={handleSendChat} className={BTN_DARK}>
                 Send
               </button>
             </div>
           </div>
-
         </div>
       </section>
 
-      {/* =========================================================================
-          SECTION 6: CLINICAL COMMUNITY & INSTAGRAM REELS
-          ========================================================================= */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto border-t border-[#2A1B14]/10 dark:border-white/10 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4 text-left">
-          <div>
-            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D48464] font-bold block mb-2">
-              CLINICAL COMMUNITY
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-serif text-[#2A1B14] dark:text-white tracking-tight">
-              Daily Insights on <em>Instagram</em>.
-            </h2>
-            <p className="text-sm text-[#564238] dark:text-[#E6D7CD] mt-2">
-              Bite-sized functional nutrition and somatic breathwork education shared with @fitwithreshmi.
-            </p>
+      {/* =====================================================================
+          INSTAGRAM REELS
+          ===================================================================== */}
+      <section className={`${SECTION} bg-surface`}>
+        <div className={CONTAINER}>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
+            <div>
+              <p className={EYEBROW}>Clinical community</p>
+              <h2 className={`${H2} mt-4`}>
+                Daily insights on <em>Instagram</em>.
+              </h2>
+              <p className="text-[15px] text-muted mt-3">
+                Bite-sized nutrition and breathwork education from @fitwithreshmi.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => reelsScrollRef.current?.scrollBy({ left: -280, behavior: 'smooth' })}
+                className="p-3 rounded-md border border-line text-ink hover:bg-card transition-colors cursor-pointer"
+                aria-label="Scroll reels left"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={() => reelsScrollRef.current?.scrollBy({ left: 280, behavior: 'smooth' })}
+                className="p-3 rounded-md border border-line text-ink hover:bg-card transition-colors cursor-pointer"
+                aria-label="Scroll reels right"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => reelsScrollRef.current?.scrollBy({ left: -260, behavior: 'smooth' })}
-              className="p-3 rounded-full border border-[#2A1B14]/20 hover:bg-[#EFECE6] text-[#2A1B14] dark:text-white transition-colors"
-              aria-label="Scroll left"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => reelsScrollRef.current?.scrollBy({ left: 260, behavior: 'smooth' })}
-              className="p-3 rounded-full border border-[#2A1B14]/20 hover:bg-[#EFECE6] text-[#2A1B14] dark:text-white transition-colors"
-              aria-label="Scroll right"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div ref={reelsScrollRef} className="flex gap-6 overflow-x-auto pb-6 scrollbar-none text-left">
-          {reels.map((reel, idx) => (
-            <a
-              key={reel.id || idx}
-              href={reel.instagramUrl || "https://instagram.com/fitwithreshmi"}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-shrink-0 w-64 aspect-[9/15] rounded-[2rem] overflow-hidden bg-black relative group shadow-md hover:shadow-2xl transition-all"
-            >
-              {reel.video_url ? (
-                <video
-                  src={reel.video_url}
-                  muted
-                  loop
-                  playsInline
-                  autoPlay
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              ) : (
-                <img
-                  src={reel.thumbnail}
-                  alt={reel.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
-              <div className="absolute bottom-5 inset-x-5 text-white">
-                <span className="text-[10px] font-mono text-[#D48464] uppercase font-bold block mb-1">
-                  @fitwithreshmi
-                </span>
-                <h4 className="font-serif text-sm font-bold line-clamp-2 leading-snug">
-                  {reel.title}
-                </h4>
-                <div className="flex items-center justify-between text-[11px] text-white/80 mt-2 font-mono">
-                  <span className="flex items-center gap-1"><Play size={10} className="fill-current" /> Watch</span>
-                  <span>{reel.views || "12.4k"} views</span>
+          <div ref={reelsScrollRef} className="flex gap-5 overflow-x-auto pb-4">
+            {reels.map((reel, idx) => (
+              <a
+                key={reel.id || idx}
+                href={reel.instagramUrl || "https://instagram.com/fitwithreshmi"}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-shrink-0 w-60 sm:w-64 aspect-[9/15] rounded-xl overflow-hidden bg-black relative group"
+              >
+                {reel.video_url ? (
+                  <video
+                    src={reel.video_url}
+                    muted
+                    loop
+                    playsInline
+                    autoPlay
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img src={reel.thumbnail} alt={reel.title} className="w-full h-full object-cover" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                <div className="absolute bottom-4 inset-x-4 text-white">
+                  <span className="text-[10px] tracking-[0.14em] text-terracotta uppercase font-semibold block mb-1">
+                    @fitwithreshmi
+                  </span>
+                  <h3 className="font-serif text-[15px] leading-snug line-clamp-2">{reel.title}</h3>
+                  <div className="flex items-center justify-between text-[11px] text-white/80 mt-2">
+                    <span className="flex items-center gap-1"><Play size={10} className="fill-current" /> Watch</span>
+                    <span>{reel.views || "12.4k"} views</span>
+                  </div>
                 </div>
-              </div>
-            </a>
-          ))}
+              </a>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* =========================================================================
-          SECTION 7: FINAL PREMIUM CTA & CLINICAL FOOTER
-          ========================================================================= */}
-      <footer className="py-20 md:py-28 px-4 sm:px-6 lg:px-12 bg-[#EFECE6]/90 dark:bg-[#1D130E]/90 backdrop-blur-md border-t border-[#2A1B14]/10 dark:border-white/10 text-center relative z-10">
-        <div className="max-w-4xl mx-auto">
-          <span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#D48464] font-bold block mb-4">
-            BEGIN YOUR PROTOCOL
-          </span>
-          <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif text-[#2A1B14] dark:text-white tracking-tight mb-6">
+      {/* =====================================================================
+          CLOSING CTA + FOOTER
+          ===================================================================== */}
+      <footer className={SECTION}>
+        <div className="max-w-[820px] mx-auto text-center">
+          <p className={EYEBROW}>Begin your protocol</p>
+          <h2 className={`${H2} mt-4`}>
             Ready to experience <em>sustainable vitality</em>?
           </h2>
-          <p className="text-base sm:text-lg text-[#564238] dark:text-[#E6D7CD] max-w-xl mx-auto mb-10 leading-relaxed">
-            Schedule a comprehensive clinical assessment with Reshmi Verma to decode multi-system laboratory data and restore autonomic balance.
+          <p className={`${BODY} max-w-[520px] mx-auto mt-6`}>
+            Book a comprehensive assessment with Reshmi Verma to make sense of your lab data and restore balance.
           </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
-            <button
-              onClick={() => navigate('/booking')}
-              className="px-8 py-4 rounded-full bg-[#2A1B14] text-white dark:bg-white dark:text-[#2A1B14] text-xs font-bold uppercase tracking-widest shadow-xl hover:scale-105 transition-all cursor-pointer"
-            >
-              Book 1:1 Consultation →
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-9">
+            <button onClick={() => navigate('/booking')} className={BTN_PRIMARY}>
+              Book 1:1 consultation
             </button>
-            <button
-              onClick={() => {
-                const hub = document.getElementById('audit-hub');
-                if (hub) hub.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="px-8 py-4 rounded-full border border-[#2A1B14]/30 dark:border-white/30 text-[#2A1B14] dark:text-white text-xs font-bold uppercase tracking-widest hover:bg-[#2A1B14]/5 transition-all cursor-pointer"
-            >
-              Take Free Assessment
+            <button onClick={scrollToAuditHub} className={BTN_OUTLINE}>
+              Take free assessment
             </button>
           </div>
+        </div>
 
-          <div className="pt-10 border-t border-[#2A1B14]/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-[#7E685D] dark:text-white/60">
-            <div>
-              Reshmi Verma · Director, Rainbow Medinova · Co-Founder, Neofit Gym
-            </div>
-            <div>
-              © {new Date().getFullYear()} Reshmi Verma. All rights reserved.
-            </div>
-          </div>
+        <div className={`${CONTAINER} mt-[72px] pt-8 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-faint text-center`}>
+          <span>Reshmi Verma · Director, Rainbow Medinova · Co-Founder, Neofit Gym</span>
+          <span>© {new Date().getFullYear()} Reshmi Verma. All rights reserved.</span>
         </div>
       </footer>
 
-      {/* =========================================================================
-          INTERACTIVE DIAGNOSTIC AUDIT MODAL
-          ========================================================================= */}
+      {/* =====================================================================
+          ASSESSMENT MODAL
+          ===================================================================== */}
       <AnimatePresence>
         {activeAuditType && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 z-[60] bg-black/55 backdrop-blur-sm flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={AUDIT_QUESTIONS[activeAuditType].title}
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#FAF8F5] dark:bg-[#1D130E] border-2 border-[#D48464] rounded-[2.5rem] max-w-xl w-full p-6 sm:p-10 shadow-2xl relative text-left"
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="bg-canvas border border-line rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-10 shadow-2xl relative text-left"
             >
               <button
                 onClick={() => setActiveAuditType(null)}
-                className="absolute top-6 right-6 p-2 rounded-full hover:bg-black/10 text-[#564238] dark:text-white transition-colors"
+                className="absolute top-5 right-5 p-2 rounded-md text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer"
                 aria-label="Close dialog"
               >
                 <X size={20} />
@@ -1345,76 +839,74 @@ export default function Home() {
 
               {!auditComplete ? (
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D48464]/15 text-[#D48464] text-[10px] font-mono font-bold uppercase mb-3">
+                  <p className={EYEBROW}>
                     Question {auditStep + 1} of {AUDIT_QUESTIONS[activeAuditType].questions.length}
-                  </div>
-                  <h3 className="font-serif text-2xl font-bold text-[#2A1B14] dark:text-white mb-2">
+                  </p>
+                  <h3 className="font-serif font-light text-[26px] leading-tight text-ink mt-3 pr-8">
                     {AUDIT_QUESTIONS[activeAuditType].title}
                   </h3>
-                  <p className="text-xs text-[#564238] dark:text-[#E6D7CD] mb-8">
+                  <p className="text-[13px] text-muted mt-2 mb-8">
                     {AUDIT_QUESTIONS[activeAuditType].subtitle}
                   </p>
 
-                  <h4 className="font-serif font-bold text-lg text-[#2A1B14] dark:text-white mb-6">
+                  <h4 className="font-serif text-[19px] leading-snug text-ink mb-5">
                     {AUDIT_QUESTIONS[activeAuditType].questions[auditStep].question}
                   </h4>
 
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-2.5 mb-8">
                     {AUDIT_QUESTIONS[activeAuditType].questions[auditStep].options.map((opt, i) => (
                       <button
                         key={i}
                         onClick={() => handleAuditAnswer(opt.points)}
-                        className="w-full text-left p-4 rounded-2xl bg-[#EFECE6] dark:bg-[#251913] hover:bg-[#D48464] hover:text-white border border-[#2A1B14]/10 transition-all font-sans text-xs sm:text-sm font-medium text-[#2A1B14] dark:text-white cursor-pointer"
+                        className="w-full text-left p-4 rounded-lg bg-surface hover:bg-terracotta hover:text-white border border-line transition-colors text-[14px] text-ink cursor-pointer"
                       >
                         {opt.label}
                       </button>
                     ))}
                   </div>
 
-                  <div className="w-full bg-[#EFECE6] dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                    <div 
-                      className="bg-[#D48464] h-full transition-all duration-300"
+                  <div className="w-full bg-surface h-1 rounded-full overflow-hidden">
+                    <div
+                      className="bg-terracotta h-full transition-all duration-300"
                       style={{ width: `${((auditStep + 1) / AUDIT_QUESTIONS[activeAuditType].questions.length) * 100}%` }}
                     />
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <div className="w-16 h-16 rounded-full bg-[#D48464]/15 text-[#D48464] mx-auto flex items-center justify-center mb-4">
-                    <Check size={32} />
+                  <div className="w-14 h-14 rounded-full bg-terracotta/15 text-terracotta mx-auto flex items-center justify-center mb-5">
+                    <Check size={28} />
                   </div>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#7E685D] font-bold block mb-1">
-                    AUDIT COMPLETED · BASELINE INDEX
-                  </span>
-                  <h3 className="font-serif text-4xl font-black text-[#2A1B14] dark:text-white mb-2">
-                    Score: {calculateAuditScore()} / 100
+                  <p className={EYEBROW}>Your baseline index</p>
+                  <h3 className="font-serif font-light text-[44px] text-ink mt-2 mb-3">
+                    {calculateAuditScore()} <span className="text-faint text-[24px]">/ 100</span>
                   </h3>
-                  <p className="text-sm text-[#564238] dark:text-[#E6D7CD] max-w-md mx-auto mb-8">
-                    {calculateAuditScore() >= 80 
-                      ? "High functional balance with minor subclinical optimization opportunities. Excellent foundation for advanced performance."
+                  <p className="text-[14px] sm:text-[15px] leading-relaxed text-muted max-w-md mx-auto mb-8">
+                    {calculateAuditScore() >= 80
+                      ? "High functional balance with minor optimization opportunities. An excellent foundation for advanced performance."
                       : calculateAuditScore() >= 55
-                      ? "Moderate autonomic or metabolic drag detected. Indicates sympathetic compensation and digestive permeability that responds rapidly to functional nutritional protocols."
-                      : "Significant autonomic and metabolic dysregulation flagged. Prioritizing 4-7-8 vagal entrainment and clinical biomarker review is strongly indicated."}
+                      ? "Moderate autonomic or metabolic drag detected. This pattern typically responds well to a functional nutrition protocol."
+                      : "Significant autonomic and metabolic strain flagged. Prioritising 4-7-8 breathing and a clinical biomarker review is strongly recommended."}
                   </p>
 
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button
                       onClick={() => {
                         setActiveAuditType(null);
                         navigate('/booking');
                       }}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#D48464] text-white text-xs font-bold uppercase tracking-widest shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                      className={`${BTN_PRIMARY} w-full sm:w-auto`}
                     >
-                      Book 1:1 Clinical Consult →
+                      Book 1:1 consult
                     </button>
                     <button
                       onClick={() => {
                         setActiveAuditType(null);
                         navigate('/breathe');
                       }}
-                      className="w-full sm:w-auto px-6 py-3.5 rounded-full border border-[#2A1B14] dark:border-white text-[#2A1B14] dark:text-white text-xs font-bold uppercase tracking-widest hover:bg-black/5 cursor-pointer transition-colors"
+                      className={`${BTN_OUTLINE} w-full sm:w-auto`}
                     >
-                      Practice 4-7-8 Breathwork
+                      Practise 4-7-8 breathing
                     </button>
                   </div>
                 </div>
@@ -1423,7 +915,6 @@ export default function Home() {
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

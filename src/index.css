@@ -1,28 +1,75 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
+/* The theme toggle sets data-theme="dark" on <body>; make Tailwind's dark: variant follow it */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --font-sans: "Hanken Grotesk", "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Fraunces", Georgia, Cambria, "Times New Roman", serif;
 
-  --color-mashiro: var(--color-mashiro-val, #FAF8F5);
-  --color-sakura: var(--color-sakura-val, #EFECE6);
-  --color-momo: var(--color-momo-val, #2A1B14);
+  /* Fixed brand colours (60/30/10 formula from the design spec sheet) */
   --color-terracotta: #D48464;
   --color-sage: #4D735D;
   --color-espresso: #2A1B14;
   --color-linen: #FAF8F5;
   --color-clay: #EFECE6;
+  --color-mashiro: #FAF8F5;
+  --color-sakura: #EFECE6;
+  --color-momo: #2A1B14;
+}
+
+/* Themed tokens: `inline` makes utilities read the variable on the element itself,
+   so the body's dark override actually applies. */
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-surface: var(--c-surface);
+  --color-card: var(--c-card);
+  --color-line: var(--c-line);
+  --color-accent: var(--c-accent);
+  --color-agave: var(--c-agave);
+  --color-band: var(--c-band);
 }
 
 :root {
-  --color-mashiro-val: #FAF8F5;
-  --color-sakura-val: #EFECE6;
-  --color-momo-val: #2A1B14;
+  --c-canvas: #FAF8F5;
+  --c-ink: #2A1B14;
+  --c-muted: #564238;
+  --c-faint: #7E685D;
+  --c-surface: #EFECE6;
+  --c-card: #FFFFFF;
+  --c-line: rgba(42, 27, 20, 0.12);
+  --c-accent: #D48464;
+  --c-agave: #4D735D;
+  --c-band: #2A1B14;
 }
 
 [data-theme="dark"] {
-  --color-mashiro-val: #1A110D;
-  --color-sakura-val: #2E2019;
-  --color-momo-val: #FAF8F5;
+  --c-canvas: #1A110D;
+  --c-ink: #FAF8F5;
+  --c-muted: #D9C9BE;
+  --c-faint: #A8958A;
+  --c-surface: #2A1D16;
+  --c-card: #251913;
+  --c-line: rgba(250, 248, 245, 0.14);
+  --c-accent: #E09273;
+  --c-agave: #69987B;
+  --c-band: #120A07;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+}
+
+body {
+  background: var(--c-canvas);
+  color: var(--c-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
