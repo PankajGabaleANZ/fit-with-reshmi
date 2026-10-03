@@ -125,12 +125,28 @@ export default function AdminDashboard() {
       const res = await fetch('/api/firebase/status');
       const data = await res.json();
       setFirebaseStatus(data);
-      setFirebaseSyncMsg('Cloud Firestore synchronization completed successfully.');
+      setFirebaseSyncMsg('Connection re-checked.');
       setTimeout(() => setFirebaseSyncMsg(''), 4000);
     } catch (err: any) {
       setFirebaseSyncMsg('Sync error: ' + (err.message || 'Failed to sync'));
     } finally {
       setIsSyncingFirebase(false);
+    }
+  };
+
+  const handleCreateDemo = async () => {
+    setFirebaseSyncMsg('');
+    try {
+      const res = await fetch('/api/admin/demo-record', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      setFirebaseSyncMsg(data.created ? 'Demo record created: see Overview / Clients.' : 'Demo record already exists.');
+      const bRes = await fetch('/api/admin/bookings');
+      const bData = await bRes.json();
+      setBookings(bData.bookings || []);
+      setTimeout(() => setFirebaseSyncMsg(''), 5000);
+    } catch (err: any) {
+      setFirebaseSyncMsg('Error: ' + (err.message || 'Failed'));
     }
   };
 
@@ -517,7 +533,7 @@ Please output a structured Markdown report using the following template:
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <h1 className="text-3xl font-serif font-bold text-momo">Consultation Schedule</h1>
-                  <p className="text-xs text-momo font-bold uppercase tracking-wider mt-1">Direct bookings synced with Google Calendar and SQLite</p>
+                  <p className="text-xs text-momo font-bold uppercase tracking-wider mt-1">Direct bookings synced with Google Calendar and saved in Firestore</p>
                 </div>
               </div>
               
@@ -1322,7 +1338,13 @@ Please output a structured Markdown report using the following template:
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-momo text-mashiro font-bold text-xs uppercase tracking-wider hover:bg-momo/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
                 >
                   <RefreshCw size={16} className={isSyncingFirebase ? "animate-spin" : ""} />
-                  {isSyncingFirebase ? "Syncing to Firestore..." : "Sync All Data to Firestore"}
+                  {isSyncingFirebase ? "Checking..." : "Re-check connection"}
+                </button>
+                <button
+                  onClick={handleCreateDemo}
+                  className="px-4 py-2.5 bg-sakura/40 text-momo border border-momo/20 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-sakura/70 transition-colors"
+                >
+                  Create demo record
                 </button>
               </div>
 
@@ -1359,7 +1381,7 @@ Please output a structured Markdown report using the following template:
                     <Database size={20} className="text-momo" />
                     <span className="text-lg font-bold text-momo">7 Collections</span>
                   </div>
-                  <p className="text-[11px] text-momo/70 mt-2">Real-time sync enabled</p>
+                  <p className="text-[11px] text-momo/70 mt-2">All data is stored in Firestore</p>
                 </div>
               </div>
 
