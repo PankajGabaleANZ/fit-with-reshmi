@@ -1,13 +1,15 @@
 import { useRef } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { INSTAGRAM_REEL_URLS, INSTAGRAM_URL, instagramCode } from "../../lib/site";
+import { instagramCode } from "../../lib/content";
+import { useContent } from "../../lib/useContent";
 import { BODY, BTN_DARK, CONTAINER, EYEBROW, H2, SECTION } from "./ui";
-
-const codes = INSTAGRAM_REEL_URLS.map(instagramCode).filter((c): c is string => Boolean(c));
 
 /** Lightweight Instagram reel embeds: each iframe loads only when it scrolls near the viewport. */
 export default function InstagramReels() {
   const scroller = useRef<HTMLDivElement>(null);
+  const { reels, contact } = useContent();
+  const codes = reels.map(instagramCode).filter((c): c is string => Boolean(c));
+  const instagramUrl = `https://www.instagram.com/${contact.instagramHandle}/`;
   if (codes.length === 0) return null;
 
   return (
@@ -24,7 +26,7 @@ export default function InstagramReels() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className={BTN_DARK}>
+            <a href={instagramUrl} target="_blank" rel="noreferrer" className={BTN_DARK}>
               Follow on Instagram <ArrowRight size={14} />
             </a>
             {codes.length > 1 && (

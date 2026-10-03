@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, X } from "lucide-react";
 import { motion } from "motion/react";
-import { ALL_QUESTIONS, DOMAIN_LABELS, DOMAIN_ORDER, type DomainKey } from "../../lib/assessment";
+import { flattenQuestions, scoreAssessment } from "../../lib/assessment";
+import { useAssessmentConfig, useContent } from "../../lib/useContent";
 import { BTN_OUTLINE, BTN_PRIMARY, EYEBROW } from "./ui";
 
 export interface AssessmentSummary {
   overall: number;
-  domains: Record<DomainKey, number>;
+  domains: Record<string, number>;
 }
 
 function band(score: number) {
@@ -25,6 +26,11 @@ export default function Assessment({
   onBook: () => void;
   onAskEva: (summary: string) => void;
 }) {
+  const cfg = useAssessmentConfig();
+  const showEva = useContent().sections.eva;
+  const ALL_QUESTIONS = useMemo(() => flattenQuestions(cfg), [cfg]);
+  const DOMAIN_ORDER = cfg.domains.map((d) => d.key);
+  const labelOf = (key: string) => cfg.domains.find((d) => d.key === key)?.label ?? key;
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const done = answers.length === ALL_QUESTIONS.length;
@@ -52,19 +58,9 @@ export default function Assessment({
     setAnswers((a) => a.slice(0, step - 1));
   };
 
-  const summary: AssessmentSummary | null = done
-    ? (() => {
-        const domains = {} as Record<DomainKey, number>;
-        DOMAIN_ORDER.forEach((d) => {
-          const pts = ALL_QUESTIONS.reduce((sum, q, i) => (q.domain === d ? sum + answers[i] : sum), 0);
-          domains[d] = Math.round(pts); // 4 questions x 25 points = 100 per domain
-        });
-        const overall = Math.round(DOMAIN_ORDER.reduce((s, d) => s + domains[d], 0) / DOMAIN_ORDER.length);
-        return { overall, domains };
-      })()
-    : null;
+  const summary: AssessmentSummary | null = done ? scoreAssessment(cfg, answers) : null;
 
-  // Persist assessment result to Firebase Firestore
+  // Save the result so Reshmi can see it in the admin area
   useEffect(() => {
     if (summary && done) {
       const clientEmail = localStorage.getItem("clientEmail") || "";
@@ -77,7 +73,7 @@ export default function Assessment({
           answers,
           clientEmail,
         }),
-      }).catch((e) => console.error("Could not persist assessment to Firebase:", e));
+      }).catch((e) => console.error("Could not save the assessment result:", e));
     }
   }, [done]);
 
@@ -85,7 +81,7 @@ export default function Assessment({
   const focusAreas = summary
     ? [...DOMAIN_ORDER].filter((d) => summary.domains[d] < 75).sort((a, b) => summary.domains[a] - summary.domains[b]).slice(0, 2)
     : [];
-  const names = focusAreas.map((d) => DOMAIN_LABELS[d]);
+  const names = focusAreas.map((d) => labelOf(d));
 
   const q = ALL_QUESTIONS[Math.min(step, ALL_QUESTIONS.length - 1)];
 
@@ -112,7 +108,7 @@ export default function Assessment({
         {!done ? (
           <div>
             <p className={EYEBROW}>
-              {DOMAIN_LABELS[q.domain]} · {step + 1} of {ALL_QUESTIONS.length}
+              {labelOf(q.domain)} · {step + 1} of {ALL_QUESTIONS.length}
             </p>
             <h3 className="font-serif font-light text-[24px] sm:text-[26px] leading-snug text-ink mt-4 mb-7 pr-8">{q.question}</h3>
 
@@ -156,7 +152,7 @@ export default function Assessment({
                 {DOMAIN_ORDER.map((d) => (
                   <div key={d}>
                     <div className="flex items-baseline justify-between gap-4">
-                      <span className="text-[14px] font-medium text-ink">{DOMAIN_LABELS[d]}</span>
+                      <span className="text-[14px] font-medium text-ink">{labelOf(d)}</span>
                       <span className={`text-[12px] font-semibold ${band(summary.domains[d]).tone}`}>
                         {band(summary.domains[d]).label}
                       </span>
@@ -171,7 +167,7 @@ export default function Assessment({
               <p className="text-[15px] leading-relaxed text-muted mt-7">
                 {names.length === 0 ? (
                   <>
-                    Your answers point to a strong foundation across all four areas. A Health Clarity Session can help you fine-tune it and protect it as life changes.
+                    Your answers point to a strong foundation across every area. A Health Clarity Session can help you fine-tune it and protect it as life changes.
                   </>
                 ) : (
                   <>
@@ -194,11 +190,12 @@ export default function Assessment({
                 <button onClick={onBook} className={`${BTN_PRIMARY} sm:flex-1`}>
                   Book a Health Clarity Session
                 </button>
+                {showEva && (
                 <button
                   onClick={() =>
                     onAskEva(
                       `I just completed the Health Resilience Assessment. My scores out of 100: ${DOMAIN_ORDER.map(
-                        (d) => `${DOMAIN_LABELS[d]} ${summary.domains[d]}`
+                        (d) => `${labelOf(d)} ${summary.domains[d]}`
                       ).join(", ")}. Can you explain what this means and what I could do next?`
                     )
                   }
@@ -206,6 +203,7 @@ export default function Assessment({
                 >
                   Ask Eva about my results
                 </button>
+                )}
               </div>
             </div>
           )

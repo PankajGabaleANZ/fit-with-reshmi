@@ -5,6 +5,9 @@ import { google } from "googleapis";
 import dotenv from "dotenv";
 import { addDays, startOfDay, endOfDay, setHours, setMinutes, parseISO, isBefore, isAfter, addMinutes, format } from "date-fns";
 import * as db from "./src/db.js";
+import { DEFAULT_CONTENT, sanitizeContent, sanitizeAssessmentConfig, formatPrice, type SiteContent } from "./src/lib/content.js";
+import { DEFAULT_ASSESSMENT_CONFIG, type AssessmentConfig } from "./src/lib/assessment.js";
+import { scheduledSlots, labelToMinutes, minutesToLabel, zonedToUtc, isDateString } from "./src/availability.js";
 import Razorpay from "razorpay";
 import { GoogleGenAI } from "@google/genai";
 import {
@@ -92,17 +95,54 @@ function getCalendarClient() {
   return google.calendar({ version: 'v3', auth });
 }
 
-// Generate all possible slots for a day
-// Configurable: 9 AM to 5 PM, 60 min slots
-function generateSlotsForDay(dateStr: string) {
-  const slots: Date[] = [];
-  const startD = startOfDay(new Date(dateStr));
-  let current = setHours(setMinutes(startD, 0), 9); // 9:00 AM
-  const endLimit = setHours(setMinutes(startD, 0), 17); // 5:00 PM
+// ---- Editable site content (cached briefly so public page views don't each hit the database) ----
+let contentCache: { at: number; value: SiteContent } | null = null;
+async function getContent(): Promise<SiteContent> {
+  if (contentCache && Date.now() - contentCache.at < 30_000) return contentCache.value;
+  const { updated_at, ...stored } = (await db.getConfig('content')) || {};
+  const value = sanitizeContent({ ...DEFAULT_CONTENT, ...stored });
+  contentCache = { at: Date.now(), value };
+  return value;
+}
 
-  while (isBefore(current, endLimit)) {
-    slots.push(current);
-    current = addMinutes(current, 60); // 60 min increments
+let assessmentCache: { at: number; value: AssessmentConfig } | null = null;
+async function getAssessmentConfig(): Promise<AssessmentConfig> {
+  if (assessmentCache && Date.now() - assessmentCache.at < 30_000) return assessmentCache.value;
+  const stored = await db.getConfig('assessment');
+  const value = (stored && sanitizeAssessmentConfig(stored)) || DEFAULT_ASSESSMENT_CONFIG;
+  assessmentCache = { at: Date.now(), value };
+  return value;
+}
+
+/** Slots (minutes after midnight) that are still free on a date: schedule minus bookings minus Google Calendar busy time. */
+async function freeSlots(date: string): Promise<number[]> {
+  const { availability: av } = await getContent();
+  let slots = scheduledSlots(av, date);
+  if (slots.length === 0) return [];
+
+  const booked = (await db.getBookingsOnDate(date)).map((b) => labelToMinutes(b.time)).filter((m): m is number => m !== null);
+  slots = slots.filter((s) => !booked.some((b) => Math.abs(b - s) < av.slotMinutes));
+
+  const calendarId = getCalendarId();
+  const calendar = getCalendarClient();
+  if (calendar && calendarId && slots.length) {
+    try {
+      const fb = await calendar.freebusy.query({
+        requestBody: {
+          timeMin: zonedToUtc(date, 0, av.timezone).toISOString(),
+          timeMax: zonedToUtc(date, 1440, av.timezone).toISOString(),
+          items: [{ id: calendarId }],
+        },
+      });
+      const busy = fb.data.calendars?.[calendarId]?.busy || [];
+      slots = slots.filter((s) => {
+        const start = zonedToUtc(date, s, av.timezone).getTime();
+        const end = start + av.slotMinutes * 60000;
+        return !busy.some((b) => b.start && b.end && start < new Date(b.end).getTime() && end > new Date(b.start).getTime());
+      });
+    } catch (err: any) {
+      console.error("Google Calendar free/busy failed; using the schedule only:", err.message);
+    }
   }
   return slots;
 }
@@ -119,6 +159,78 @@ async function startServer() {
 
   // Never expose the password hash to the browser.
   const publicClient = (c: any) => c && { id: c.id, email: c.email, name: c.name };
+
+  // ---- Editable website content, questionnaire and results ----------------------------------------
+  app.get("/api/content", async (req, res) => {
+    try {
+      res.json({ content: await getContent() });
+    } catch (err: any) {
+      console.error("Content error:", err);
+      res.status(500).json({ error: "Could not load content" });
+    }
+  });
+
+  app.put("/api/admin/content", requireAdmin, async (req, res) => {
+    try {
+      const clean = sanitizeContent(req.body?.content);
+      await db.setConfig("content", clean);
+      contentCache = null;
+      res.json({ success: true, content: await getContent() });
+    } catch (err: any) {
+      console.error("Content save error:", err);
+      res.status(500).json({ error: "Could not save" });
+    }
+  });
+
+  app.get("/api/assessment/config", async (req, res) => {
+    try {
+      res.json({ config: await getAssessmentConfig() });
+    } catch (err: any) {
+      res.status(500).json({ error: "Could not load the questionnaire" });
+    }
+  });
+
+  app.put("/api/admin/assessment/config", requireAdmin, async (req, res) => {
+    try {
+      const clean = sanitizeAssessmentConfig(req.body?.config);
+      if (!clean) return res.status(400).json({ error: "Each area needs a name, at least one question, and each question at least two answers." });
+      await db.setConfig("assessment", clean);
+      assessmentCache = null;
+      res.json({ success: true, config: await getAssessmentConfig() });
+    } catch (err: any) {
+      console.error("Assessment config save error:", err);
+      res.status(500).json({ error: "Could not save" });
+    }
+  });
+
+  app.get("/api/admin/assessments", requireAdmin, async (req, res) => {
+    try {
+      res.json({ assessments: await db.getAssessments() });
+    } catch (err: any) {
+      res.status(500).json({ error: "Could not load results" });
+    }
+  });
+
+  app.post("/api/admin/bookings/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const status = req.body?.status;
+      if (!["Upcoming", "Completed", "Cancelled"].includes(status)) return res.status(400).json({ error: "Invalid status" });
+      const booking = await db.getBookingById(id);
+      if (!booking) return res.status(404).json({ error: "Booking not found" });
+      await db.updateBookingStatus(id, status);
+      // A cancelled slot becomes bookable again.
+      const minutes = labelToMinutes(booking.time);
+      if (minutes !== null) {
+        if (status === "Cancelled") await db.releaseSlot(booking.date, minutes);
+        else await db.reserveSlot(booking.date, minutes);
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Booking status error:", err);
+      res.status(500).json({ error: "Could not update the booking" });
+    }
+  });
 
   // Razorpay Diagnostics and Verification Endpoint
   app.get("/api/admin/razorpay/status", requireAdmin, async (req, res) => {
@@ -287,83 +399,45 @@ async function startServer() {
   // API Routes
   app.post("/api/create-razorpay-order", async (req, res) => {
     try {
-      const { amount, currency = "INR" } = req.body;
       const razorpay = getRazorpay();
       if (!razorpay) {
         return res.status(503).json({ error: "Razorpay is not configured" });
       }
-      const options = {
-        amount: Math.round(amount * 100), // convert to smallest currency unit (paise)
-        currency,
-        receipt: `receipt_${Date.now()}`
-      };
-      const order = await razorpay.orders.create(options);
+      const content = await getContent();
+      const { serviceId, amount: testAmount } = req.body || {};
+      let amount: number;
+      if (typeof serviceId === "string") {
+        // The price always comes from the admin-managed service list, never from the browser.
+        const service = content.services.find((x) => x.id === serviceId);
+        if (!service || service.price <= 0) return res.status(400).json({ error: "Unknown or free session" });
+        amount = service.price;
+      } else if (testAmount && getAdminSession(req)) {
+        amount = Number(testAmount); // admin payment test only
+      } else {
+        return res.status(400).json({ error: "Missing session" });
+      }
+      if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: "Invalid amount" });
+      const order = await razorpay.orders.create({
+        amount: Math.round(amount * 100), // smallest currency unit (paise)
+        currency: content.currency,
+        receipt: `receipt_${Date.now()}`,
+        notes: typeof serviceId === "string" ? { serviceId } : {},
+      });
       res.json(order);
     } catch (err: any) {
       console.error("Razorpay order error:", err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: "Could not create the payment order" });
     }
   });
 
   app.get("/api/calendar/availability", async (req, res) => {
     try {
-      const { date } = req.query; // date string like '2023-10-05'
-      if (!date || typeof date !== 'string') {
-        return res.status(400).json({ error: "Missing 'date' query parameter" });
-      }
-
-      const calendarId = getCalendarId();
-      const calendar = getCalendarClient();
-      if (!calendar || !calendarId) {
-        // Fallback for UI if environment not set up yet
-        return res.status(503).json({ 
-          error: "Calendar integration restricted",
-          message: "Please configure GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, and GOOGLE_CALENDAR_ID"
-        });
-      }
-
-      const timeMin = startOfDay(new Date(date)).toISOString();
-      const timeMax = endOfDay(new Date(date)).toISOString();
-
-      // Get free/busy from Google Calendar
-      const freeBusyResponse = await calendar.freebusy.query({
-        requestBody: {
-          timeMin,
-          timeMax,
-          items: [{ id: calendarId }]
-        }
-      });
-
-      const busyIntervals = freeBusyResponse.data.calendars?.[calendarId]?.busy || [];
-
-      // Generate base working hours
-      const allSlots = generateSlotsForDay(date);
-
-      // Filter out slots that overlap with busy intervals or are in the past
-      const now = new Date();
-      const availableSlots = allSlots.filter(slot => {
-        const slotEnd = addMinutes(slot, 60);
-        
-        if (isBefore(slot, now)) return false; // don't show past slots
-
-        const isBusy = busyIntervals.some(busy => {
-          if (!busy.start || !busy.end) return false;
-          const busyStart = new Date(busy.start);
-          const busyEnd = new Date(busy.end);
-          // Overlap check
-          return (slot < busyEnd && slotEnd > busyStart);
-        });
-
-        return !isBusy;
-      });
-
-      // Map to formatted string times (e.g. "09:00 AM")
-      const formattedSlots = availableSlots.map(slot => format(slot, 'hh:mm a'));
-
-      res.json({ slots: formattedSlots });
+      const { date } = req.query;
+      if (!isDateString(date)) return res.status(400).json({ error: "Missing or invalid 'date' (YYYY-MM-DD)" });
+      res.json({ slots: (await freeSlots(date)).map(minutesToLabel) });
     } catch (err: any) {
-      console.error("Calendar Availability Error:", err);
-      res.status(500).json({ error: "Failed to fetch availability: " + (err.message || String(err)) });
+      console.error("Availability error:", err);
+      res.status(500).json({ error: "Failed to fetch availability" });
     }
   });
 
@@ -385,85 +459,81 @@ async function startServer() {
   });
 
   app.post("/api/calendar/book", async (req, res) => {
+    let reserved: { date: string; minutes: number } | null = null;
     try {
-      const { date, time, patientName, patientEmail, notes } = req.body;
-      
-      const calendarId = getCalendarId();
-      const calendar = getCalendarClient();
-      // We no longer abort if calendar is missing, we'll just save to DB.
+      const { date, time, patientName, patientEmail, notes, serviceId } = req.body || {};
+      const content = await getContent();
+      const service = content.services.find((x) => x.id === serviceId) || content.services[0];
+      const minutes = labelToMinutes(time);
+      if (!isDateString(date) || minutes === null || !isEmail(patientEmail) || typeof patientName !== "string" || !patientName.trim()) {
+        return res.status(400).json({ error: "Please check the date, time, name and email." });
+      }
+      const name = patientName.trim().slice(0, 100);
+      const cleanNotes = typeof notes === "string" ? notes.slice(0, 4000) : "";
 
-      // Parse date and time to actual Date object
-      // 'date': '2023-10-05', 'time': '09:00 AM'
-      const baseDate = startOfDay(new Date(date));
-      const [timeVal, modifier] = time.split(' ');
-      let [hours, minutes] = timeVal.split(':').map(Number);
-      if (hours === 12) hours = 0;
-      if (modifier === 'PM') hours += 12;
-      
-      const startDateTime = setMinutes(setHours(baseDate, hours), minutes);
-      const endDateTime = addMinutes(startDateTime, 60);
+      // Only slots that are genuinely open can be booked, and reserving one is atomic.
+      if (!(await freeSlots(date)).includes(minutes)) {
+        return res.status(409).json({ error: "That time is no longer available. Please pick another." });
+      }
+      if (!(await db.reserveSlot(date, minutes))) {
+        return res.status(409).json({ error: "That time was just taken. Please pick another." });
+      }
+      reserved = { date, minutes };
 
+      const tz = content.availability.timezone;
+      const start = zonedToUtc(date, minutes, tz);
+      const end = new Date(start.getTime() + service.durationMinutes * 60000);
       const event = {
-        summary: `Consultation: ${patientName}`,
-        description: `Patient Email: ${patientEmail}\n\nNotes/Answers: \n${notes}`,
-        start: { dateTime: startDateTime.toISOString() },
-        end: { dateTime: endDateTime.toISOString() },
+        summary: `${service.title}: ${name}`,
+        description: `Client email: ${patientEmail}\n\nNotes/Answers:\n${cleanNotes}`,
+        start: { dateTime: start.toISOString(), timeZone: tz },
+        end: { dateTime: end.toISOString(), timeZone: tz },
         attendees: [{ email: patientEmail }],
         conferenceData: {
-          createRequest: {
-            requestId: `meet-${Date.now()}`,
-            conferenceSolutionKey: { type: "hangoutsMeet" }
-          }
-        }
+          createRequest: { requestId: `meet-${Date.now()}`, conferenceSolutionKey: { type: "hangoutsMeet" } },
+        },
       };
 
-      let meetLink = null;
-      let eventId = null;
-      let eventLink = null;
+      const calendarId = getCalendarId();
+      const calendar = getCalendarClient();
+      let meetLink: string | null = null;
+      let eventId: string | null = null;
+      let eventLink: string | null = null;
 
       if (calendar && calendarId) {
+        const insert = (id: string) =>
+          calendar.events.insert({ calendarId: id, conferenceDataVersion: 1, requestBody: event, sendUpdates: "all" });
         try {
-          const response = await calendar.events.insert({
-            calendarId: calendarId,
-            conferenceDataVersion: 1,
-            requestBody: event,
-            sendUpdates: 'all'
-          });
+          let response;
+          try {
+            response = await insert(calendarId);
+          } catch (calendarErr: any) {
+            // A bad calendar id often shows up as a 404; try the primary calendar instead.
+            if (calendarErr.status === 404 || String(calendarErr.message).includes("Not Found")) response = await insert("primary");
+            else throw calendarErr;
+          }
           meetLink = response.data.hangoutLink || null;
           eventId = response.data.id || null;
           eventLink = response.data.htmlLink || null;
         } catch (calendarErr: any) {
-          console.error("Calendar API Error during booking with ID " + calendarId + ":", calendarErr.message);
-          // Fallback to primary if the explicit calendar ID fails (often a 404 from bad config)
-          if (calendarErr.status === 404 || calendarErr.message.includes('Not Found')) {
-            try {
-              const fallbackResponse = await calendar.events.insert({
-                calendarId: 'primary',
-                conferenceDataVersion: 1,
-                requestBody: event,
-                sendUpdates: 'all'
-              });
-              meetLink = fallbackResponse.data.hangoutLink || null;
-              eventId = fallbackResponse.data.id || null;
-              eventLink = fallbackResponse.data.htmlLink || null;
-            } catch (fallbackErr: any) {
-              console.error("Calendar API Fallback Error:", fallbackErr.message);
-            }
-          }
+          console.error("Calendar API error during booking:", calendarErr.message);
         }
       }
 
-      // DB Persistence
       let client = await db.getClientByEmail(patientEmail);
-      if (!client) {
-        client = await db.createClient(patientEmail, patientName);
-      }
-      
-      await db.createBooking(client.id, date, time, notes, meetLink, eventId);
+      if (!client) client = await db.createClient(patientEmail, name);
+      await db.createBooking(client.id, date, time, cleanNotes, meetLink, eventId, {
+        service_id: service.id,
+        service_title: service.title,
+        duration_minutes: service.durationMinutes,
+        price: service.price,
+      });
+      reserved = null;
 
-      res.json({ success: true, eventLink: eventLink });
+      res.json({ success: true, eventLink });
     } catch (err: any) {
       console.error("Calendar Booking Error:", err);
+      if (reserved) await db.releaseSlot(reserved.date, reserved.minutes).catch(() => {});
       res.status(500).json({ error: "Failed to book event" });
     }
   });
@@ -607,7 +677,7 @@ async function startServer() {
 
   // ---- Eva: the HealthwithReshmi AI assistant ----------------------------------------------
   // The system prompt lives here (never trusted from the browser) and requests are rate limited.
-  const EVA_SYSTEM_PROMPT = `You are Eva, the AI assistant for HealthwithReshmi, the health practice of Reshmi Verma (Functional Nutritionist, Gut Health Coach, Biohacker, breathwork-trained; 20+ years in diagnostics and healthcare; Director of Rainbow Medinova Diagnostic Services; Co-founder of Neofit Gym).
+  const buildEvaPrompt = (priceText: string, minutes: number) => `You are Eva, the AI assistant for HealthwithReshmi, the health practice of Reshmi Verma (Functional Nutritionist, Gut Health Coach, Biohacker, breathwork-trained; 20+ years in diagnostics and healthcare; Director of Rainbow Medinova Diagnostic Services; Co-founder of Neofit Gym).
 Your approach: Educate, Guide, Connect, Book. Be warm, calm, clear and encouraging. Use plain language. Keep replies short (under about 120 words) unless the user asks for detail. Use British/Indian English spelling.
 
 What you do:
@@ -615,7 +685,7 @@ What you do:
 - Explain HealthwithReshmi's approach (the SAMYA Method: See the signs, Ask the right questions, Map the patterns, Your customised solution, Achieve lasting wellness), the assessment, and the Health Clarity Session.
 - Guide people through the free Health Resilience Assessment (about 5 minutes, 16 questions across gut and metabolic health, breath and regulation, hormonal and lifestyle balance, sleep and recovery; it gives a personalised health profile and is an educational snapshot, not a diagnosis). It is on the home page under "Assessments". If someone shares their scores, explain in general terms what the areas mean and what a sensible next step is; never diagnose.
 - Explain the Health Clarity Session: a focused 60-minute 1:1 session with Reshmi to explore the person's health story, assessment results and any reports they have, identify patterns and priorities, and agree the right health pathway. There is no one-size-fits-all program; the pathway is chosen after the session.
-- Price: only when asked (or when the person is ready to book), say the Health Clarity Session is Rs 1,999 for 60 minutes 1:1 with Reshmi, and explain the value (a personalised look at their whole story and a clear next step) without being pushy. Never mention price unprompted.
+- Price: only when asked (or when the person is ready to book), say the Health Clarity Session is ${priceText} for ${minutes} minutes 1:1 with Reshmi, and explain the value (a personalised look at their whole story and a clear next step) without being pushy. Never mention price unprompted.
 - Help with navigation and booking: the person can book via the "Book a Health Clarity Session" button or the Book a Consultation link at the top of the page.
 
 Hard rules:
@@ -660,11 +730,16 @@ Hard rules:
         return res.status(503).json({ error: "Eva is not configured yet." });
       }
 
+      const content = await getContent();
+      if (!content.sections.eva) return res.status(503).json({ error: "Eva is switched off." });
+      const service = content.services[0];
+      const priceText = service.price > 0 ? formatPrice(service.price, content.currency).replace(/\u00a0/g, ' ') : 'free';
+
       const ai = getAIClient();
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents,
-        config: { systemInstruction: EVA_SYSTEM_PROMPT, maxOutputTokens: 500, temperature: 0.6 },
+        config: { systemInstruction: buildEvaPrompt(priceText, service.durationMinutes), maxOutputTokens: 500, temperature: 0.6 },
       });
       res.json({ text: (response.text || '').trim() });
     } catch (err: any) {

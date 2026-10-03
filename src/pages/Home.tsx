@@ -7,19 +7,8 @@ import Brand from "../components/Brand";
 import Eva from "../components/home/Eva";
 import InstagramReels from "../components/home/InstagramReels";
 import { BODY, BTN_DARK, BTN_OUTLINE, BTN_PRIMARY, CONTAINER, EYEBROW, H2, SECTION } from "../components/home/ui";
-import { ASSESSMENT_FORM_URL, INSTAGRAM_HANDLE, INSTAGRAM_URL, PINNED_POST_URL, TESTIMONIALS, TRANSFORMATION_PHOTOS, instagramCode } from "../lib/site";
-
-// PLACEHOLDER hero image: swap for a warm, wide portrait of Reshmi.
-// Keep the left ~45% of the photo calm: the headline sits over it.
-const HERO_IMAGE = "/hero-placeholder.svg";
-const PORTRAIT_IMAGE = "/IMG_5514-scaled-e1762270577699.jpg";
-
-const CREDIBILITY = [
-  "20+ Years in Healthcare Industry",
-  "37+ kg Personal Transformation",
-  "Personalised Health",
-  "1:1 Guidance",
-];
+import { instagramCode } from "../lib/content";
+import { useAssessmentConfig, useContent } from "../lib/useContent";
 
 const WHOLE_STORY = [
   { icon: Search, title: "Health Insights", desc: "Bring together your health story, history and available information to see the bigger picture." },
@@ -38,81 +27,81 @@ const SAMYA = [
   { letter: "A", title: "Achieve lasting wellness", desc: "Sustainable change that holds, with guidance for as long as you need it." },
 ];
 
-const CREDENTIALS = [
-  "Biotechnologist · MBA, Marketing & HR",
-  "Director, Rainbow Medinova Diagnostic Services",
-  "Co-founder, Neofit Gym",
-  "Functional Nutritionist · Gut Health Coach · Biohacker",
-  "Oxygen Advantage Coach",
-  "Breath Resilience Instructor",
-  "Circular Connected Breathwork Facilitator",
-];
-
 const CLARITY_STEPS = [
   { n: "01", title: "Your assessment highlights the patterns", desc: "A 5-minute snapshot of how your gut, breath, hormones and sleep are doing." },
   { n: "02", title: "Your Health Clarity Session explores your story", desc: "A focused 60-minute 1:1 conversation with Reshmi." },
   { n: "03", title: "Your pathway takes shape", desc: "You leave with clear priorities and the right next step for you." },
 ];
 
-const SESSION_INCLUDES = [
-  "Walk through your health story, history and goals",
-  "Look at your assessment results and any reports you already have",
-  "Identify the patterns and priorities that matter most",
-  "Agree the right health pathway for you",
-];
-
 export default function Home() {
   const navigate = useNavigate();
+  const c = useContent();
+  const assessmentCfg = useAssessmentConfig();
   const [showAssessment, setShowAssessment] = useState(false);
   const [evaSeed, setEvaSeed] = useState<{ text: string; nonce: number } | null>(null);
 
   const startAssessment = () => {
-    if (ASSESSMENT_FORM_URL) window.open(ASSESSMENT_FORM_URL, "_blank", "noopener");
+    if (c.contact.assessmentFormUrl) window.open(c.contact.assessmentFormUrl, "_blank", "noopener");
     else setShowAssessment(true);
   };
   const book = () => navigate("/booking");
-  const pinnedCode = PINNED_POST_URL ? instagramCode(PINNED_POST_URL) : undefined;
+  const pinnedCode = c.contact.pinnedPostUrl ? instagramCode(c.contact.pinnedPostUrl) : undefined;
+  const instagramHandle = c.contact.instagramHandle;
+  const instagramUrl = `https://www.instagram.com/${instagramHandle}/`;
+  const headlineLines = c.hero.headline.split("\n").filter(Boolean);
+  const photos = c.transformation.photos;
 
   return (
     <div className="bg-canvas text-ink min-h-screen selection:bg-terracotta selection:text-white">
       {/* 1 · HERO */}
       <section className="pt-[72px]">
+        {c.banner.enabled && c.banner.text && (
+          <div className="bg-ink text-canvas text-center text-[13px] px-4 py-2.5">
+            <span>{c.banner.text}</span>
+            {c.banner.linkUrl && c.banner.linkLabel && (
+              <a href={c.banner.linkUrl} className="ml-3 underline underline-offset-2 text-canvas">
+                {c.banner.linkLabel}
+              </a>
+            )}
+          </div>
+        )}
         <div className={`${CONTAINER} px-5 sm:px-8 pt-5 sm:pt-6`}>
           <div className="relative rounded-2xl overflow-hidden min-h-[560px] lg:min-h-[640px] flex items-center bg-surface">
-            <img src={HERO_IMAGE} alt="" className="absolute inset-0 w-full h-full object-cover object-right" />
+            <img src={c.hero.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover object-right" />
             <div className="absolute inset-0 bg-gradient-to-r from-canvas via-canvas/85 to-canvas/10 lg:via-canvas/55 lg:to-transparent" />
 
             <div className="relative px-6 sm:px-12 lg:px-16 py-14 max-w-[760px]">
-              <p className={EYEBROW}>Science-led. Human-centred.</p>
+              {c.hero.eyebrow && <p className={EYEBROW}>{c.hero.eyebrow}</p>}
               <h1 className="font-serif font-light text-[40px] sm:text-[56px] lg:text-[66px] leading-[1.05] tracking-tight text-ink mt-5">
-                More Energy.
-                <br />
-                Better Health.
-                <br />
-                <em>A Brighter You.</em>
+                {headlineLines.map((line, i) => (
+                  <span key={i}>
+                    {i > 0 && <br />}
+                    {i === headlineLines.length - 1 && headlineLines.length > 1 ? <em>{line}</em> : line}
+                  </span>
+                ))}
               </h1>
-              <p className={`${BODY} max-w-[500px] mt-6`}>
-                A personalised approach to nutrition, breathwork and lifestyle, designed around how you live, feel and function.
-              </p>
+              {c.hero.subheadline && <p className={`${BODY} max-w-[500px] mt-6`}>{c.hero.subheadline}</p>}
               <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-9">
                 <button onClick={book} className={BTN_PRIMARY}>
-                  Book a Health Clarity Session <ArrowRight size={14} />
+                  {c.hero.primaryButton} <ArrowRight size={14} />
                 </button>
                 <button onClick={startAssessment} className={BTN_OUTLINE}>
-                  Take Your Health Assessment <ArrowRight size={14} />
+                  {c.hero.secondaryButton} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
           </div>
 
           {/* Credibility strip */}
-          <ul className="grid grid-cols-2 lg:grid-cols-4 gap-y-4 gap-x-6 mt-8 sm:mt-10 text-center">
-            {CREDIBILITY.map((c) => (
-              <li key={c} className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase text-muted lg:border-l first:border-l-0 border-line px-2">
-                {c}
-              </li>
-            ))}
-          </ul>
+          {c.credibility.length > 0 && (
+            <ul className="grid grid-cols-2 lg:grid-cols-4 gap-y-4 gap-x-6 mt-8 sm:mt-10 text-center">
+              {c.credibility.map((t) => (
+                <li key={t} className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase text-muted lg:border-l first:border-l-0 border-line px-2">
+                  {t}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
@@ -167,14 +156,14 @@ export default function Home() {
         </div>
       </section>
 
-      <BreatheNow />
+      {c.sections.breathe && <BreatheNow />}
 
       {/* 4 · MEET RESHMI */}
       <section id="about" className={SECTION}>
         <div className={`${CONTAINER} grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center`}>
           <div className="lg:col-span-5">
             <div className="aspect-square max-w-[460px] mx-auto lg:mx-0 rounded-2xl overflow-hidden bg-surface border border-line">
-              <img src={PORTRAIT_IMAGE} alt="Reshmi Verma" className="w-full h-full object-cover" loading="lazy" />
+              <img src={c.about.portraitUrl} alt="Reshmi Verma" className="w-full h-full object-cover" loading="lazy" />
             </div>
           </div>
 
@@ -184,20 +173,14 @@ export default function Home() {
               Science, healthcare experience and <em>lived transformation</em>.
             </h2>
             <div className={`${BODY} space-y-4 mt-6`}>
-              <p>
-                I'm a Biotechnologist and MBA in Marketing &amp; HR, with a specialisation in Medical Tourism, and I've spent over 20 years in the world of diagnostics and healthcare. I'm the Director of Rainbow Medinova Diagnostic Services and Co-founder of Neofit Gym.
-              </p>
-              <p>
-                As a Functional Nutritionist, Biohacker and Gut Health Coach, I've studied Functional Nutrition across India, the USA and Australia, and trained as an Oxygen Advantage Coach, Breath Resilience Instructor and Circular Connected Breathwork Facilitator, with a deep interest in longevity.
-              </p>
-              <p>
-                But perhaps my most personal qualification is my own transformation: losing more than 38 kg and completely changing my relationship with health.
-              </p>
+              {c.about.paragraphs.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
             </div>
             <ul className="flex flex-wrap gap-2 mt-7">
-              {CREDENTIALS.map((c) => (
-                <li key={c} className="px-3 py-1.5 rounded-md bg-surface border border-line text-[12px] text-muted">
-                  {c}
+              {c.about.credentials.map((t) => (
+                <li key={t} className="px-3 py-1.5 rounded-md bg-surface border border-line text-[12px] text-muted">
+                  {t}
                 </li>
               ))}
             </ul>
@@ -227,9 +210,9 @@ export default function Home() {
           <div className="lg:col-span-6 bg-card border border-line rounded-xl p-8 sm:p-10">
             <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-faint">What it looks at</p>
             <ul className="mt-5 divide-y divide-line">
-              {["Gut & metabolic health", "Breath & regulation", "Hormonal & lifestyle balance", "Sleep & recovery"].map((t) => (
-                <li key={t} className="py-4 font-serif text-[20px] text-ink">
-                  {t}
+              {assessmentCfg.domains.map((d) => (
+                <li key={d.key} className="py-4 font-serif text-[20px] text-ink">
+                  {d.label}
                 </li>
               ))}
             </ul>
@@ -261,7 +244,7 @@ export default function Home() {
           <div className="max-w-[720px] mx-auto mt-14 text-center">
             <h3 className="font-serif font-light text-[26px] text-ink">What happens in the 60 minutes</h3>
             <ul className="mt-6 space-y-3 text-left inline-block text-[15px] text-muted">
-              {SESSION_INCLUDES.map((t) => (
+              {c.clarity.includes.map((t) => (
                 <li key={t} className="flex gap-3">
                   <span className="text-accent mt-0.5">•</span>
                   <span>{t}</span>
@@ -316,26 +299,25 @@ export default function Home() {
 
       {/* 8 · MY TRANSFORMATION */}
       <section id="transformation" className={SECTION}>
-        <div className={`${CONTAINER} grid grid-cols-1 ${TRANSFORMATION_PHOTOS.length ? "lg:grid-cols-12" : ""} gap-12 lg:gap-16 items-center`}>
-          <div className={TRANSFORMATION_PHOTOS.length ? "lg:col-span-7" : "max-w-[820px] mx-auto text-center"}>
+        <div className={`${CONTAINER} grid grid-cols-1 ${photos.length ? "lg:grid-cols-12" : ""} gap-12 lg:gap-16 items-center`}>
+          <div className={photos.length ? "lg:col-span-7" : "max-w-[820px] mx-auto text-center"}>
             <p className={EYEBROW}>My transformation</p>
             <p className="font-serif font-light text-[48px] sm:text-[72px] leading-none tracking-tight text-ink mt-6">
-              98 kg <span className="text-accent">→</span> 60s kg
+              {c.transformation.before} <span className="text-accent">→</span> {c.transformation.after}
             </p>
-            <p className={`${BODY} mt-8`}>
-              Losing more than 38 kg changed far more than my body. It changed my relationship with health, and it's the reason I do this work.
-            </p>
-            <p className={`${BODY} mt-4`}>
-              I bring together science, healthcare experience and lived transformation to help people build better health, greater resilience and lasting change.
-            </p>
+            {c.transformation.paragraphs.map((p, i) => (
+              <p key={i} className={`${BODY} ${i === 0 ? "mt-8" : "mt-4"}`}>
+                {p}
+              </p>
+            ))}
             <button onClick={book} className={`${BTN_OUTLINE} mt-9`}>
               Start your own story <ArrowRight size={14} />
             </button>
           </div>
 
-          {TRANSFORMATION_PHOTOS.length > 0 && (
+          {photos.length > 0 && (
             <div className="lg:col-span-5 grid grid-cols-2 gap-4">
-              {TRANSFORMATION_PHOTOS.map((p) => (
+              {photos.map((p) => (
                 <figure key={p.src} className="rounded-xl overflow-hidden border border-line bg-surface">
                   <img src={p.src} alt={p.alt} className="w-full aspect-[3/4] object-cover" loading="lazy" />
                   <figcaption className="px-3 py-2 text-[11px] tracking-[0.14em] uppercase text-faint text-center">{p.label}</figcaption>
@@ -346,8 +328,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 9 · TESTIMONIALS (hidden until real ones are added in lib/site.ts) */}
-      {TESTIMONIALS.length > 0 && (
+      {/* 9 · TESTIMONIALS (hidden until real ones are added in the admin) */}
+      {c.testimonials.length > 0 && (
         <section id="testimonials" className={`${SECTION} bg-surface`}>
           <div className={CONTAINER}>
             <div className="text-center">
@@ -357,7 +339,7 @@ export default function Home() {
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mt-12">
-              {TESTIMONIALS.map((t) => (
+              {c.testimonials.map((t) => (
                 <figure key={t.name} className="bg-card border border-line rounded-xl p-8">
                   <blockquote className="font-serif text-[19px] leading-relaxed text-ink">“{t.quote}”</blockquote>
                   <figcaption className="mt-6 text-[13px] text-muted">
@@ -372,10 +354,10 @@ export default function Home() {
       )}
 
       {/* 10 · MEET EVA */}
-      <Eva seed={evaSeed} />
+      {c.sections.eva && <Eva seed={evaSeed} />}
 
       {/* 11 · INSTAGRAM */}
-      <InstagramReels />
+      {c.sections.instagram && <InstagramReels />}
 
       {/* 12 · FINAL CTA + FOOTER */}
       <footer id="contact" className={SECTION}>
@@ -396,9 +378,21 @@ export default function Home() {
         <div className={`${CONTAINER} mt-[72px] pt-8 border-t border-line flex flex-col md:flex-row items-center justify-between gap-4 text-[12px] text-faint text-center md:text-left`}>
           <span>© {new Date().getFullYear()} <Brand tm={false} className="font-serif text-[14px] text-muted" />. Educational content only, not a substitute for medical advice.</span>
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2" aria-label="Footer">
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-ink transition-colors no-underline">
-              Instagram @{INSTAGRAM_HANDLE}
-            </a>
+            {c.contact.email && (
+              <a href={`mailto:${c.contact.email}`} className="hover:text-ink transition-colors no-underline">
+                {c.contact.email}
+              </a>
+            )}
+            {c.contact.phone && (
+              <a href={`tel:${c.contact.phone.replace(/[^+\d]/g, "")}`} className="hover:text-ink transition-colors no-underline">
+                {c.contact.phone}
+              </a>
+            )}
+            {instagramHandle && (
+              <a href={instagramUrl} target="_blank" rel="noreferrer" className="hover:text-ink transition-colors no-underline">
+                Instagram @{instagramHandle}
+              </a>
+            )}
             <a href="/login" className="hover:text-ink transition-colors no-underline">Client portal</a>
           </nav>
         </div>
