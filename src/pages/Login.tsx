@@ -20,37 +20,31 @@ export default function Login() {
     return () => unsubscribe();
   }, []);
 
+  const saveClient = (client: any) => {
+    // Display-only details; access is controlled by the secure session cookie set by the server.
+    localStorage.setItem('clientId', client.id);
+    localStorage.setItem('clientName', client.name);
+    localStorage.setItem('clientEmail', client.email);
+  };
+
   const handleGoogleSignIn = async () => {
     try {
       setErrorMsg('');
       const result = await googleSignIn();
       if (result && result.user) {
-        const { email, displayName } = result.user;
-        // Try to login or signup via our backend using Google details
-        let res = await fetch('/api/client/login', {
+        // The server verifies the Google ID token itself, then signs the visitor in.
+        const idToken = await result.user.getIdToken();
+        const res = await fetch('/api/client/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ idToken })
         });
-        let data = await res.json();
-        
-        if (!data.client) {
-          // If client doesn't exist, sign up automatically
-          res = await fetch('/api/client/signup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, name: displayName || 'Google User', password: 'google_oauth' })
-          });
-          data = await res.json();
-        }
-
+        const data = await res.json();
         if (data.client) {
-          localStorage.setItem('clientId', data.client.id);
-          localStorage.setItem('clientName', data.client.name);
-          localStorage.setItem('clientEmail', data.client.email);
+          saveClient(data.client);
           navigate('/dashboard');
         } else {
-          setErrorMsg("Error verifying Google account with backend.");
+          setErrorMsg(data.error || "Error verifying Google account with backend.");
         }
       }
     } catch(err) {
@@ -71,9 +65,7 @@ export default function Login() {
         });
         const data = await res.json();
         if (data.client) {
-          localStorage.setItem('clientId', data.client.id);
-          localStorage.setItem('clientName', data.client.name);
-          localStorage.setItem('clientEmail', data.client.email);
+          saveClient(data.client);
           navigate('/dashboard');
         } else {
           setErrorMsg('Login failed: ' + (data.error || 'User not found. Try signing up?'));
@@ -86,9 +78,7 @@ export default function Login() {
         });
         const data = await res.json();
         if (data.client) {
-          localStorage.setItem('clientId', data.client.id);
-          localStorage.setItem('clientName', data.client.name);
-          localStorage.setItem('clientEmail', data.client.email);
+          saveClient(data.client);
           navigate('/dashboard');
         } else {
           setErrorMsg('Signup failed: ' + (data.error || 'User already exists.'));
@@ -170,6 +160,8 @@ export default function Login() {
                 <input
                   type="password"
                   required
+                  minLength={isLogin ? undefined : 8}
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full pl-11 pr-4 py-3 bg-mashiro border border-sakura rounded-xl text-momo placeholder-momo/40 focus:outline-none focus:ring-1 focus:ring-momo focus:border-momo sm:text-sm transition-colors"

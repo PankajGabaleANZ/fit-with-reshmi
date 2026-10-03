@@ -53,6 +53,11 @@ export default function AdminDashboard() {
   const [isCreatingTestOrder, setIsCreatingTestOrder] = useState(false);
   const [testOrderError, setTestOrderError] = useState('');
 
+  // Restore an existing admin session (secure cookie) after a page refresh.
+  useEffect(() => {
+    fetch('/api/admin/me').then(r => { if (r.ok) setIsAuthenticated(true); }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) return;
     
@@ -240,9 +245,11 @@ export default function AdminDashboard() {
         body: JSON.stringify({ username, password })
       });
       if (res.ok) {
+        setPassword('');
         setIsAuthenticated(true);
       } else {
-        alert("Invalid credentials. Try: admin / admin");
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Invalid credentials.");
       }
     } catch {
       alert("Error logging in");
@@ -269,7 +276,7 @@ export default function AdminDashboard() {
                 onChange={e => setUsername(e.target.value)} 
                 required 
                 className="w-full px-4 py-3 rounded-xl border border-momo/30 bg-white text-momo font-medium focus:border-momo outline-none" 
-                placeholder="admin" 
+                autoComplete="username"
               />
             </div>
             <div>
@@ -280,7 +287,7 @@ export default function AdminDashboard() {
                 onChange={e => setPassword(e.target.value)} 
                 required 
                 className="w-full px-4 py-3 rounded-xl border border-momo/30 bg-white text-momo font-medium focus:border-momo outline-none" 
-                placeholder="admin" 
+                autoComplete="current-password"
               />
             </div>
             <button 
@@ -289,9 +296,6 @@ export default function AdminDashboard() {
             >
               Sign In to Management Portal
             </button>
-            <p className="text-[11px] text-center text-momo/60 font-medium pt-2">
-              Default access: <span className="font-mono font-bold text-momo">admin</span> / <span className="font-mono font-bold text-momo">admin</span>
-            </p>
           </form>
         </div>
       </div>

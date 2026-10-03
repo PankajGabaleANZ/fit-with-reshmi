@@ -21,12 +21,21 @@ export default function Dashboard() {
       return;
     }
     
-    fetch(`/api/client/${clientId}/bookings`)
-      .then(r => r.json())
+    fetch('/api/client/bookings')
+      .then(r => {
+        if (r.status === 401) {
+          // Session expired or never existed: clear stale display details and sign in again.
+          ['clientId', 'clientName', 'clientEmail'].forEach(k => localStorage.removeItem(k));
+          navigate('/login');
+          throw new Error('signed out');
+        }
+        return r.json();
+      })
       .then(data => {
         if (data.bookings) setBookings(data.bookings);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, [clientId, navigate]);
 
   const handleBook = (e: React.FormEvent) => {

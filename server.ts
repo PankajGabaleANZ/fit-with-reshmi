@@ -7,6 +7,11 @@ import { addDays, startOfDay, endOfDay, setHours, setMinutes, parseISO, isBefore
 import * as db from "./src/db.js";
 import Razorpay from "razorpay";
 import { GoogleGenAI } from "@google/genai";
+import {
+  hashPassword, verifyPassword, startSession, endSession, getAdminSession, getClientSession,
+  requireAdmin, requireClient, checkAdminCredentials, allowLoginAttempt, clearLoginAttempts,
+  clientIp, verifyGoogleIdToken,
+} from "./src/serverAuth.js";
 
 dotenv.config();
 
@@ -106,10 +111,14 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.set("trust proxy", true);
+  app.use(express.json({ limit: "1mb" }));
+
+  // Never expose the password hash to the browser.
+  const publicClient = (c: any) => c && { id: c.id, email: c.email, name: c.name };
 
   // Razorpay Diagnostics and Verification Endpoint
-  app.get("/api/admin/razorpay/status", (req, res) => {
+  app.get("/api/admin/razorpay/status", requireAdmin, (req, res) => {
     try {
       const keyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || "";
       const secret = process.env.RAZORPAY_KEY_SECRET || "";
@@ -140,7 +149,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/admin/breath/protocols", (req, res) => {
+  app.post("/api/admin/breath/protocols", requireAdmin, (req, res) => {
     try {
       const protocol = req.body;
       if (!protocol || !protocol.id || !protocol.name) {
@@ -173,7 +182,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/admin/reels", (req, res) => {
+  app.post("/api/admin/reels", requireAdmin, (req, res) => {
     try {
       const reel = req.body;
       if (!reel || !reel.id || !reel.title) {
@@ -186,7 +195,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/admin/reels/:id", (req, res) => {
+  app.delete("/api/admin/reels/:id", requireAdmin, (req, res) => {
     try {
       const { id } = req.params;
       db.deleteInstagramReel(id);
@@ -196,7 +205,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/admin/settings", (req, res) => {
+  app.post("/api/admin/settings", requireAdmin, (req, res) => {
     try {
       const { settings } = req.body;
       if (!settings || typeof settings !== "object") {
@@ -294,7 +303,7 @@ async function startServer() {
     }
   });
 
-  app.get("/api/calendar/test", async (req, res) => {
+  app.get("/api/calendar/test", requireAdmin, async (req, res) => {
     try {
       const calendarId = getCalendarId();
       const calendar = getCalendarClient();
@@ -395,7 +404,7 @@ async function startServer() {
     }
   });
 
-  app.get('/api/admin/bookings', (req, res) => {
+  app.get('/api/admin/bookings', requireAdmin, (req, res) => {
     try {
       const bookings = db.getAdminBookings();
       res.json({ bookings });
@@ -404,7 +413,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/admin/sessions', (req, res) => {
+  app.post('/api/admin/sessions', requireAdmin, (req, res) => {
     try {
       const { bookingId, transcription, plan } = req.body;
       if (transcription) db.saveSessionTransciption(bookingId, transcription);
@@ -415,50 +424,122 @@ async function startServer() {
     }
   });
 
+  // ---- Client accounts ---------------------------------------------------------------------
+  const isEmail = (e: any) => typeof e === 'string' && e.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+
   app.post('/api/client/login', (req, res) => {
     try {
-      const { email, password } = req.body;
-      const client = db.getClientByEmail(email);
-      if (!client) return res.status(404).json({ error: "Client not found" });
-      // In a real app we would check password here. For now we just return client if it exists.
-      res.json({ client });
+      const ip = clientIp(req);
+      if (!allowLoginAttempt(`client:${ip}`)) {
+        return res.status(429).json({ error: "Too many attempts. Please try again in a few minutes." });
+      }
+      const { email, password } = req.body || {};
+      const client = isEmail(email) ? db.getClientByEmail(email) : null;
+      if (!client || typeof password !== 'string' || !verifyPassword(password, client.password_hash)) {
+        return res.status(401).json({ error: "Incorrect email or password" });
+      }
+      clearLoginAttempts(`client:${ip}`);
+      startSession(res, { role: 'client', clientId: client.id });
+      res.json({ client: publicClient(client) });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("Client login error:", err);
+      res.status(500).json({ error: "Login failed" });
     }
   });
 
   app.post('/api/client/signup', (req, res) => {
     try {
-      const { email, name, password } = req.body;
-      const existing = db.getClientByEmail(email);
-      if (existing) return res.status(400).json({ error: "Client already exists" });
-      const client = db.createClient(email, name);
-      res.json({ client });
+      const { email, name, password } = req.body || {};
+      if (!isEmail(email) || typeof name !== 'string' || !name.trim() || name.length > 100) {
+        return res.status(400).json({ error: "Please enter your name and a valid email" });
+      }
+      if (typeof password !== 'string' || password.length < 8 || password.length > 200) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+      if (db.getClientByEmail(email)) {
+        return res.status(400).json({
+          error: "An account with this email already exists. Please sign in, or contact Reshmi if you have booked before and need access."
+        });
+      }
+      const client = db.createClient(email.trim(), name.trim(), hashPassword(password));
+      startSession(res, { role: 'client', clientId: client.id });
+      res.json({ client: publicClient(client) });
+    } catch (err: any) {
+      console.error("Client signup error:", err);
+      res.status(500).json({ error: "Signup failed" });
+    }
+  });
+
+  // "Continue with Google": the browser sends a Firebase ID token which we verify ourselves.
+  app.post('/api/client/google', async (req, res) => {
+    try {
+      const ip = clientIp(req);
+      if (!allowLoginAttempt(`client:${ip}`)) {
+        return res.status(429).json({ error: "Too many attempts. Please try again in a few minutes." });
+      }
+      const verified = await verifyGoogleIdToken(req.body?.idToken);
+      if (!verified) return res.status(401).json({ error: "Google sign-in could not be verified" });
+      let client = db.getClientByEmail(verified.email);
+      if (!client) client = db.createClient(verified.email, verified.name);
+      startSession(res, { role: 'client', clientId: client.id });
+      res.json({ client: publicClient(client) });
+    } catch (err: any) {
+      console.error("Google sign-in error:", err);
+      res.status(500).json({ error: "Google sign-in failed" });
+    }
+  });
+
+  app.get('/api/client/me', (req, res) => {
+    const s = getClientSession(req);
+    const client = s ? db.getClientById(s.clientId) : null;
+    if (!client) return res.status(401).json({ error: "Not signed in" });
+    res.json({ client: publicClient(client) });
+  });
+
+  app.post('/api/client/logout', (req, res) => {
+    endSession(res, 'client');
+    res.json({ success: true });
+  });
+
+  // Clients can only ever read their own bookings (the id comes from the signed session cookie).
+  app.get('/api/client/bookings', requireClient, (req, res) => {
+    try {
+      res.json({ bookings: db.getClientBookings((req as any).clientId) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
+  // ---- Admin login ---------------------------------------------------------------------------
   app.post('/api/admin/login', (req, res) => {
     try {
-      const { username, password } = req.body;
-      if (username === 'admin' && password === 'admin') {
-        res.json({ success: true });
-      } else {
-        res.status(401).json({ error: "Invalid credentials" });
+      const ip = clientIp(req);
+      if (!allowLoginAttempt(`admin:${ip}`)) {
+        return res.status(429).json({ error: "Too many attempts. Please try again in a few minutes." });
       }
+      const { username, password } = req.body || {};
+      const ok = checkAdminCredentials(username, password);
+      if (ok === "unconfigured") {
+        return res.status(503).json({ error: "Admin login is not set up. Set ADMIN_USERNAME and ADMIN_PASSWORD_HASH on the server." });
+      }
+      if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+      clearLoginAttempts(`admin:${ip}`);
+      startSession(res, { role: 'admin' });
+      res.json({ success: true });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error("Admin login error:", err);
+      res.status(500).json({ error: "Login failed" });
     }
   });
 
-  app.get('/api/client/:clientId/bookings', (req, res) => {
-    try {
-      const bookings = db.getClientBookings(Number(req.params.clientId));
-      res.json({ bookings });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
+  app.get('/api/admin/me', (req, res) => {
+    if (!getAdminSession(req)) return res.status(401).json({ error: "Not signed in" });
+    res.json({ success: true });
+  });
+
+  app.post('/api/admin/logout', (req, res) => {
+    endSession(res, 'admin');
+    res.json({ success: true });
   });
 
   // ---- Eva: the HealthwithReshmi AI assistant ----------------------------------------------
@@ -529,7 +610,7 @@ Hard rules:
     }
   });
 
-  app.post('/api/ai/generate', async (req, res) => {
+  app.post('/api/ai/generate', requireAdmin, async (req, res) => {
     try {
       const { prompt, systemInstruction } = req.body;
       if (!prompt) {

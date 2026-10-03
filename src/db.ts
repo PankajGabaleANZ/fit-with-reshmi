@@ -315,13 +315,22 @@ export function updateBreathProtocol(protocol: any) {
   `).run(protocol);
 }
 
-export function getClientByEmail(email: string): any {
-  return db.prepare('SELECT * FROM clients WHERE email = ?').get(email);
+// Migration: add password storage to clients created before client logins were secured.
+if (!(db.prepare('PRAGMA table_info(clients)').all() as any[]).some((c) => c.name === 'password_hash')) {
+  db.exec('ALTER TABLE clients ADD COLUMN password_hash TEXT');
 }
 
-export function createClient(email: string, name: string): any {
-  const result = db.prepare('INSERT INTO clients (email, name) VALUES (?, ?)').run(email, name);
+export function getClientByEmail(email: string): any {
+  return db.prepare('SELECT * FROM clients WHERE email = ? COLLATE NOCASE').get(email);
+}
+
+export function createClient(email: string, name: string, passwordHash: string | null = null): any {
+  const result = db.prepare('INSERT INTO clients (email, name, password_hash) VALUES (?, ?, ?)').run(email, name, passwordHash);
   return db.prepare('SELECT * FROM clients WHERE id = ?').get(result.lastInsertRowid);
+}
+
+export function getClientById(id: number): any {
+  return db.prepare('SELECT * FROM clients WHERE id = ?').get(id);
 }
 
 export function createBooking(clientId: number, date: string, time: string, notes: string | null, meetLink: string | null, eventId: string | null) {
