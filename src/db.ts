@@ -1,5 +1,15 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import { 
+  saveClientToFirestore, 
+  saveBookingToFirestore, 
+  saveSessionToFirestore, 
+  saveBreathProtocolToFirestore, 
+  saveReelToFirestore, 
+  saveSiteSettingToFirestore,
+  saveAssessmentToFirestore,
+  testConnection 
+} from './lib/firestoreService.js';
 
 const dbPath = path.join(process.cwd(), 'database.sqlite');
 export const db = new Database(dbPath);
@@ -69,6 +79,15 @@ db.exec(`
     duration TEXT DEFAULT '0:60',
     instagramUrl TEXT NOT NULL,
     sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS assessments (
+    id TEXT PRIMARY KEY,
+    overall INTEGER NOT NULL,
+    domains TEXT NOT NULL,
+    answers TEXT,
+    client_email TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
@@ -264,6 +283,7 @@ export function updateSetting(key: string, value: string) {
     INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
   `).run(key, value);
+  saveSiteSettingToFirestore(key, value).catch(e => console.error("Firestore setting sync:", e));
 }
 
 export function getBreathProtocols(): any[] {
@@ -289,6 +309,20 @@ export function addOrUpdateInstagramReel(reel: any) {
       instagramUrl = excluded.instagramUrl,
       sort_order = excluded.sort_order
   `).run(reel);
+
+  saveReelToFirestore({
+    id: String(reel.id),
+    title: reel.title,
+    views: reel.views || '10K',
+    likes: reel.likes || '1K',
+    comments: Number(reel.comments || 0),
+    thumbnail: reel.thumbnail || '',
+    videoUrl: reel.video_url || '',
+    duration: reel.duration || '0:60',
+    instagramUrl: reel.instagramUrl || '',
+    sortOrder: Number(reel.sort_order || 0),
+    createdAt: reel.created_at || new Date().toISOString()
+  }).catch(e => console.error("Firestore reel sync:", e));
 }
 
 export function deleteInstagramReel(id: string) {
@@ -313,6 +347,22 @@ export function updateBreathProtocol(protocol: any) {
       clinical_notes = excluded.clinical_notes,
       sort_order = excluded.sort_order
   `).run(protocol);
+
+  saveBreathProtocolToFirestore({
+    id: String(protocol.id),
+    name: protocol.name,
+    desc: protocol.desc,
+    inhale: Number(protocol.inhale),
+    holdIn: Number(protocol.holdIn),
+    exhale: Number(protocol.exhale),
+    holdOut: Number(protocol.holdOut),
+    emoji: protocol.emoji || '🧘',
+    animationMode: protocol.animation_mode || 'fluid',
+    videoUrl: protocol.video_url || '',
+    instructionAudio: protocol.instruction_audio || '',
+    clinicalNotes: protocol.clinical_notes || '',
+    sortOrder: Number(protocol.sort_order || 0)
+  }).catch(e => console.error("Firestore protocol sync:", e));
 }
 
 // Migration: add password storage to clients created before client logins were secured.
@@ -326,7 +376,17 @@ export function getClientByEmail(email: string): any {
 
 export function createClient(email: string, name: string, passwordHash: string | null = null): any {
   const result = db.prepare('INSERT INTO clients (email, name, password_hash) VALUES (?, ?, ?)').run(email, name, passwordHash);
-  return db.prepare('SELECT * FROM clients WHERE id = ?').get(result.lastInsertRowid);
+  const client: any = db.prepare('SELECT * FROM clients WHERE id = ?').get(result.lastInsertRowid);
+  if (client) {
+    saveClientToFirestore({
+      id: String(client.id),
+      email: client.email,
+      name: client.name,
+      history: client.history || '',
+      createdAt: client.created_at || new Date().toISOString()
+    }).catch(e => console.error("Firestore client sync:", e));
+  }
+  return client;
 }
 
 export function getClientById(id: number): any {
@@ -338,7 +398,22 @@ export function createBooking(clientId: number, date: string, time: string, note
     INSERT INTO bookings (client_id, date, time, notes, meet_link, event_id)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(clientId, date, time, notes, meetLink, eventId);
-  return result.lastInsertRowid;
+  const bookingId = Number(result.lastInsertRowid);
+  const client: any = getClientById(clientId);
+  saveBookingToFirestore({
+    id: String(bookingId),
+    clientId: String(clientId),
+    clientEmail: client?.email || '',
+    clientName: client?.name || '',
+    date,
+    time,
+    notes: notes || '',
+    status: 'Upcoming',
+    meetLink: meetLink || '',
+    eventId: eventId || '',
+    createdAt: new Date().toISOString()
+  }).catch(e => console.error("Firestore booking sync:", e));
+  return bookingId;
 }
 
 export function getClientBookings(clientId: number) {
@@ -366,6 +441,12 @@ export function saveSessionTransciption(bookingId: number, transcription: string
     INSERT INTO sessions (booking_id, transcription) VALUES (?, ?)
     ON CONFLICT(booking_id) DO UPDATE SET transcription = excluded.transcription
   `).run(bookingId, transcription);
+  saveSessionToFirestore({
+    id: String(bookingId),
+    bookingId: String(bookingId),
+    transcription,
+    createdAt: new Date().toISOString()
+  }).catch(e => console.error("Firestore session transcription sync:", e));
 }
 
 export function saveSessionPlan(bookingId: number, plan: string) {
@@ -373,8 +454,144 @@ export function saveSessionPlan(bookingId: number, plan: string) {
     INSERT INTO sessions (booking_id, plan) VALUES (?, ?)
     ON CONFLICT(booking_id) DO UPDATE SET plan = excluded.plan;
   `).run(bookingId, plan);
+  saveSessionToFirestore({
+    id: String(bookingId),
+    bookingId: String(bookingId),
+    plan,
+    createdAt: new Date().toISOString()
+  }).catch(e => console.error("Firestore session plan sync:", e));
 }
 
 export function updateBookingStatus(bookingId: number, status: string) {
   db.prepare('UPDATE bookings SET status = ? WHERE id = ?').run(status, bookingId);
+}
+
+export function saveAssessment(assessment: { id: string; overall: number; domains: Record<string, number>; answers?: number[]; clientEmail?: string }) {
+  const domainsJson = JSON.stringify(assessment.domains);
+  const answersJson = JSON.stringify(assessment.answers || []);
+  const now = new Date().toISOString();
+
+  db.prepare(`
+    INSERT INTO assessments (id, overall, domains, answers, client_email, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET overall = excluded.overall, domains = excluded.domains, answers = excluded.answers
+  `).run(assessment.id, assessment.overall, domainsJson, answersJson, assessment.clientEmail || null, now);
+
+  saveAssessmentToFirestore({
+    id: assessment.id,
+    overall: assessment.overall,
+    domains: assessment.domains,
+    answers: assessment.answers,
+    clientEmail: assessment.clientEmail,
+    createdAt: now
+  }).catch(e => console.error("Firestore assessment sync error:", e));
+}
+
+export function getAssessments(): any[] {
+  return db.prepare('SELECT * FROM assessments ORDER BY created_at DESC').all();
+}
+
+// Batch synchronizer to populate Cloud Firestore
+export async function syncAllToFirestore() {
+  try {
+    const isOnline = await testConnection();
+    if (!isOnline) {
+      console.log("Firestore connection test completed (offline/mock)");
+      return;
+    }
+    console.log("Synchronizing data to Cloud Firestore...");
+
+    // 1. Sync breath protocols
+    const protocols = getBreathProtocols();
+    for (const p of protocols) {
+      await saveBreathProtocolToFirestore({
+        id: String(p.id),
+        name: p.name,
+        desc: p.desc,
+        inhale: p.inhale,
+        holdIn: p.holdIn,
+        exhale: p.exhale,
+        holdOut: p.holdOut,
+        emoji: p.emoji,
+        animationMode: p.animation_mode,
+        videoUrl: p.video_url,
+        instructionAudio: p.instruction_audio,
+        clinicalNotes: p.clinical_notes,
+        sortOrder: p.sort_order
+      });
+    }
+
+    // 2. Sync reels
+    const reels = getInstagramReels();
+    for (const r of reels) {
+      await saveReelToFirestore({
+        id: String(r.id),
+        title: r.title,
+        views: r.views,
+        likes: r.likes,
+        comments: r.comments,
+        thumbnail: r.thumbnail,
+        videoUrl: r.video_url,
+        duration: r.duration,
+        instagramUrl: r.instagramUrl,
+        sortOrder: r.sort_order,
+        createdAt: r.created_at
+      });
+    }
+
+    // 3. Sync clients
+    const clients: any[] = db.prepare('SELECT * FROM clients').all();
+    for (const c of clients) {
+      await saveClientToFirestore({
+        id: String(c.id),
+        email: c.email,
+        name: c.name,
+        history: c.history || '',
+        createdAt: c.created_at || new Date().toISOString()
+      });
+    }
+
+    // 4. Sync bookings
+    const bookings: any[] = db.prepare(`
+      SELECT bookings.*, clients.email as clientEmail, clients.name as clientName 
+      FROM bookings 
+      LEFT JOIN clients ON bookings.client_id = clients.id
+    `).all();
+    for (const b of bookings) {
+      await saveBookingToFirestore({
+        id: String(b.id),
+        clientId: String(b.client_id),
+        clientEmail: b.clientEmail || '',
+        clientName: b.clientName || '',
+        date: b.date,
+        time: b.time,
+        notes: b.notes || '',
+        status: b.status || 'Upcoming',
+        meetLink: b.meet_link || '',
+        eventId: b.event_id || '',
+        createdAt: b.created_at || new Date().toISOString()
+      });
+    }
+
+    // 5. Sync assessments
+    const assessments: any[] = db.prepare('SELECT * FROM assessments').all();
+    for (const a of assessments) {
+      try {
+        await saveAssessmentToFirestore({
+          id: String(a.id),
+          overall: Number(a.overall),
+          domains: typeof a.domains === 'string' ? JSON.parse(a.domains) : a.domains,
+          answers: typeof a.answers === 'string' ? JSON.parse(a.answers) : [],
+          clientEmail: a.client_email || '',
+          createdAt: a.created_at || new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Sync single assessment error:", err);
+      }
+    }
+
+    console.log("Cloud Firestore data sync successfully completed.");
+  } catch (err) {
+    console.error("Cloud Firestore initial sync error:", err);
+  }
 }

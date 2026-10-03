@@ -64,6 +64,23 @@ export default function Assessment({
       })()
     : null;
 
+  // Persist assessment result to Firebase Firestore
+  useEffect(() => {
+    if (summary && done) {
+      const clientEmail = localStorage.getItem("clientEmail") || "";
+      fetch("/api/assessment/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          overall: summary.overall,
+          domains: summary.domains,
+          answers,
+          clientEmail,
+        }),
+      }).catch((e) => console.error("Could not persist assessment to Firebase:", e));
+    }
+  }, [done]);
+
   // Only areas below the "strong" threshold are called out
   const focusAreas = summary
     ? [...DOMAIN_ORDER].filter((d) => summary.domains[d] < 75).sort((a, b) => summary.domains[a] - summary.domains[b]).slice(0, 2)

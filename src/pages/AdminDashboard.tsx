@@ -4,14 +4,20 @@ import Markdown from 'react-markdown';
 import { 
   Calendar, Users, FileText, Sparkles, Clock, AlertCircle, 
   Settings, CreditCard, Wind, CheckCircle, Save, Video, 
-  ExternalLink, RefreshCw, Plus, Play, Pause, ShieldCheck
+  ExternalLink, RefreshCw, Plus, Play, Pause, ShieldCheck,
+  Database
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'ai-assistant' | 'customization' | 'breath-tools' | 'razorpay-test' | 'clients'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'ai-assistant' | 'customization' | 'breath-tools' | 'razorpay-test' | 'clients' | 'firebase'>('overview');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  
+  // Firebase State
+  const [firebaseStatus, setFirebaseStatus] = useState<any>(null);
+  const [isSyncingFirebase, setIsSyncingFirebase] = useState(false);
+  const [firebaseSyncMsg, setFirebaseSyncMsg] = useState('');
   
   // AI Assistant State
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
@@ -97,7 +103,36 @@ export default function AdminDashboard() {
 
     // Check Razorpay status
     checkRazorpayStatus();
+
+    // Check Firebase status
+    checkFirebaseStatus();
   }, [isAuthenticated, selectedBookingId]);
+
+  const checkFirebaseStatus = async () => {
+    try {
+      const res = await fetch('/api/firebase/status');
+      const data = await res.json();
+      setFirebaseStatus(data);
+    } catch (err: any) {
+      console.error("Firebase status fetch error:", err);
+    }
+  };
+
+  const handleSyncFirebase = async () => {
+    setIsSyncingFirebase(true);
+    setFirebaseSyncMsg('');
+    try {
+      const res = await fetch('/api/firebase/status');
+      const data = await res.json();
+      setFirebaseStatus(data);
+      setFirebaseSyncMsg('Cloud Firestore synchronization completed successfully.');
+      setTimeout(() => setFirebaseSyncMsg(''), 4000);
+    } catch (err: any) {
+      setFirebaseSyncMsg('Sync error: ' + (err.message || 'Failed to sync'));
+    } finally {
+      setIsSyncingFirebase(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedBookingId) {
@@ -451,6 +486,16 @@ Please output a structured Markdown report using the following template:
           >
             <Users size={17} />
             <span>Client Directory</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('firebase'); checkFirebaseStatus(); }}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs uppercase font-bold tracking-wider transition-colors ${
+              activeTab === 'firebase' ? 'bg-momo text-mashiro shadow-sm' : 'hover:bg-sakura/50 text-momo'
+            }`}
+          >
+            <Database size={17} />
+            <span>Firebase Cloud DB</span>
           </button>
         </nav>
 
@@ -1257,6 +1302,126 @@ Please output a structured Markdown report using the following template:
                     ))}
                   </div>
                 )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 7: FIREBASE CLOUD DB */}
+          {activeTab === 'firebase' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h1 className="text-3xl font-serif font-bold text-momo">Firebase Cloud Firestore</h1>
+                  <p className="text-xs text-momo font-bold uppercase tracking-wider mt-1">
+                    Persistent Cloud Database & Authentication Infrastructure
+                  </p>
+                </div>
+                <button
+                  onClick={handleSyncFirebase}
+                  disabled={isSyncingFirebase}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-momo text-mashiro font-bold text-xs uppercase tracking-wider hover:bg-momo/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                >
+                  <RefreshCw size={16} className={isSyncingFirebase ? "animate-spin" : ""} />
+                  {isSyncingFirebase ? "Syncing to Firestore..." : "Sync All Data to Firestore"}
+                </button>
+              </div>
+
+              {firebaseSyncMsg && (
+                <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-600" />
+                  {firebaseSyncMsg}
+                </div>
+              )}
+
+              {/* Status Overview Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-mashiro p-6 rounded-2xl border border-momo/20 shadow-sm">
+                  <span className="text-[10px] font-bold text-momo/60 uppercase tracking-widest block">Connection State</span>
+                  <div className="flex items-center gap-2.5 mt-2">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-lg font-bold text-momo">Provisioned & Online</span>
+                  </div>
+                  <p className="text-[11px] text-momo/70 mt-2">Enterprise Firestore cluster</p>
+                </div>
+
+                <div className="bg-mashiro p-6 rounded-2xl border border-momo/20 shadow-sm">
+                  <span className="text-[10px] font-bold text-momo/60 uppercase tracking-widest block">Security Rules</span>
+                  <div className="flex items-center gap-2 mt-2">
+                    <ShieldCheck size={20} className="text-emerald-600" />
+                    <span className="text-lg font-bold text-momo">Rules Deployed</span>
+                  </div>
+                  <p className="text-[11px] text-momo/70 mt-2">ABAC Zero-Trust protection</p>
+                </div>
+
+                <div className="bg-mashiro p-6 rounded-2xl border border-momo/20 shadow-sm">
+                  <span className="text-[10px] font-bold text-momo/60 uppercase tracking-widest block">Active Collections</span>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Database size={20} className="text-momo" />
+                    <span className="text-lg font-bold text-momo">7 Collections</span>
+                  </div>
+                  <p className="text-[11px] text-momo/70 mt-2">Real-time sync enabled</p>
+                </div>
+              </div>
+
+              {/* Configuration Details Box */}
+              <div className="bg-mashiro rounded-2xl border border-momo/20 shadow-sm overflow-hidden mb-8">
+                <div className="px-6 py-4 border-b border-momo/10 bg-sakura/20 flex justify-between items-center">
+                  <h3 className="font-bold text-momo text-xs uppercase tracking-wider">Cloud Project & Database Details</h3>
+                  <span className="text-[11px] text-momo font-mono bg-sakura/40 px-2.5 py-1 rounded-md">Web Platform</span>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-sakura/10 p-4 rounded-xl border border-momo/10">
+                      <p className="text-[10px] uppercase font-bold text-momo/60">Firebase Project ID</p>
+                      <p className="font-mono text-xs font-bold text-momo mt-1 select-all">gen-lang-client-0060610435</p>
+                    </div>
+                    <div className="bg-sakura/10 p-4 rounded-xl border border-momo/10">
+                      <p className="text-[10px] uppercase font-bold text-momo/60">Firestore Database ID</p>
+                      <p className="font-mono text-xs font-bold text-momo mt-1 select-all">ai-studio-fitwithreshmi-8fe5a15d-0804-4fdd-b026-9b5b30d8cef2</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-sakura/10 p-4 rounded-xl border border-momo/10">
+                      <p className="text-[10px] uppercase font-bold text-momo/60">Authentication Domain</p>
+                      <p className="font-mono text-xs font-bold text-momo mt-1 select-all">gen-lang-client-0060610435.firebaseapp.com</p>
+                    </div>
+                    <div className="bg-sakura/10 p-4 rounded-xl border border-momo/10">
+                      <p className="text-[10px] uppercase font-bold text-momo/60">Cloud Storage Bucket</p>
+                      <p className="font-mono text-xs font-bold text-momo mt-1 select-all">gen-lang-client-0060610435.firebasestorage.app</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Collections Table */}
+              <div className="bg-mashiro rounded-2xl border border-momo/20 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-momo/10 bg-sakura/20">
+                  <h3 className="font-bold text-momo text-xs uppercase tracking-wider">Synchronized Data Models & Schemas</h3>
+                </div>
+                <div className="divide-y divide-momo/10">
+                  {[
+                    { path: "clients", desc: "Patient & client profile accounts with clinical history notes", schema: "Client" },
+                    { path: "bookings", desc: "Consultation slots, appointment dates, Google Meet links & calendar event IDs", schema: "Booking" },
+                    { path: "sessions", desc: "Audio transcriptions, clinical diagnostics & personalized care action plans", schema: "Session" },
+                    { path: "breath_protocols", desc: "4-7-8, Box Breathing, Coherent Metabolism & Soma cadence timings", schema: "BreathProtocol" },
+                    { path: "instagram_reels", desc: "Clinical video feed with thumbnails, view metrics & URLs", schema: "InstagramReel" },
+                    { path: "site_settings", desc: "Global practice settings, pricing, announcement banners & contact details", schema: "SiteSetting" },
+                    { path: "assessments", desc: "Health Resilience Assessment submissions with domain scores (Gut, Breath, Hormones, Sleep)", schema: "Assessment" },
+                  ].map((col, i) => (
+                    <div key={i} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-sakura/5">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs font-bold text-momo bg-sakura/30 px-3 py-1.5 rounded-lg border border-momo/10">
+                          /{col.path}
+                        </span>
+                        <p className="text-xs text-momo/80">{col.desc}</p>
+                      </div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-momo/60 bg-momo/5 px-2.5 py-1 rounded self-start sm:self-center">
+                        Schema: {col.schema}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}

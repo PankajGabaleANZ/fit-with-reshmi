@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only manageable via server / console
+    }
+
+    // Clients Collection
+    match /clients/{clientId} {
+      allow get: if isValidId(clientId) && (isOwner(clientId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(clientId) && (isOwner(clientId) || isAdmin())
+        && request.resource.data.keys().hasAll(['id', 'email', 'name'])
+        && request.resource.data.id == clientId
+        && request.resource.data.email is string
+        && request.resource.data.name is string;
+      allow update: if isValidId(clientId) && (isOwner(clientId) || isAdmin())
+        && request.resource.data.id == clientId;
+      allow delete: if isAdmin();
+    }
+
+    // Bookings Collection
+    match /bookings/{bookingId} {
+      allow get: if isValidId(bookingId) && (isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid);
+      allow create: if isValidId(bookingId)
+        && request.resource.data.keys().hasAll(['id', 'date', 'time', 'status'])
+        && request.resource.data.id == bookingId
+        && request.resource.data.date is string
+        && request.resource.data.time is string
+        && request.resource.data.status in ['Upcoming', 'Completed', 'Cancelled']
+        && (isAdmin() || (isSignedIn() && request.resource.data.clientId == request.auth.uid) || !isSignedIn());
+      allow update: if isValidId(bookingId) && (isAdmin() || (isSignedIn() && resource.data.clientId == request.auth.uid))
+        && request.resource.data.id == bookingId;
+      allow delete: if isAdmin();
+    }
+
+    // Clinical Sessions Collection
+    match /sessions/{sessionId} {
+      allow get: if isValidId(sessionId) && (isAdmin() || (
+        isSignedIn() && 
+        resource.data.bookingId is string &&
+        exists(/databases/$(database)/documents/bookings/$(resource.data.bookingId)) &&
+        get(/databases/$(database)/documents/bookings/$(resource.data.bookingId)).data.clientId == request.auth.uid
+      ));
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Breath Protocols Collection (Public Read, Admin Write)
+    match /breath_protocols/{protocolId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Instagram Reels Collection (Public Read, Admin Write)
+    match /instagram_reels/{reelId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Site Settings Collection (Public Read, Admin Write)
+    match /site_settings/{settingKey} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Health Resilience Assessments Collection
+    match /assessments/{assessmentId} {
+      allow get: if isValidId(assessmentId) && (isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid) || !isSignedIn());
+      allow list: if isAdmin();
+      allow create: if isValidId(assessmentId)
+        && request.resource.data.keys().hasAll(['id', 'overall', 'createdAt'])
+        && request.resource.data.id == assessmentId;
+      allow update, delete: if isAdmin();
+    }
+  }
+}

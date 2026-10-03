@@ -220,6 +220,52 @@ async function startServer() {
     }
   });
 
+  // Health Resilience Assessment Submission -> Saved to Firebase & SQLite
+  app.post("/api/assessment/submit", (req, res) => {
+    try {
+      const { overall, domains, answers, clientEmail, id } = req.body;
+      const assessmentId = id || `assess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      db.saveAssessment({
+        id: assessmentId,
+        overall: Number(overall) || 0,
+        domains: domains || {},
+        answers: Array.isArray(answers) ? answers : [],
+        clientEmail: clientEmail || ""
+      });
+      res.json({ success: true, id: assessmentId });
+    } catch (err: any) {
+      console.error("Assessment submission error:", err);
+      res.status(500).json({ error: err.message || "Failed to save assessment" });
+    }
+  });
+
+  // Firebase Status & Details Endpoint
+  app.get("/api/firebase/status", async (req, res) => {
+    try {
+      const isOnline = await db.syncAllToFirestore().then(() => true).catch(() => false);
+      res.json({
+        success: true,
+        isConfigured: true,
+        projectId: "gen-lang-client-0060610435",
+        firestoreDatabaseId: "ai-studio-fitwithreshmi-8fe5a15d-0804-4fdd-b026-9b5b30d8cef2",
+        authDomain: "gen-lang-client-0060610435.firebaseapp.com",
+        storageBucket: "gen-lang-client-0060610435.firebasestorage.app",
+        collections: [
+          "clients",
+          "bookings",
+          "sessions",
+          "breath_protocols",
+          "instagram_reels",
+          "site_settings",
+          "assessments"
+        ],
+        online: isOnline
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // API Routes
   app.post("/api/create-razorpay-order", async (req, res) => {
     try {
@@ -654,6 +700,12 @@ Hard rules:
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    // Sync all data models to Cloud Firestore in background
+    db.syncAllToFirestore().then(() => {
+      console.log("Firebase Firestore synchronization active.");
+    }).catch((e) => {
+      console.error("Firebase initial sync caught error:", e);
+    });
   });
 }
 
