@@ -107,7 +107,10 @@ function generateSlotsForDay(dateStr: string) {
   return slots;
 }
 
+const isEmail = (e: any) => typeof e === 'string' && e.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+
 async function startServer() {
+  await db.init();
   const app = express();
   const PORT = 3000;
 
@@ -118,7 +121,7 @@ async function startServer() {
   const publicClient = (c: any) => c && { id: c.id, email: c.email, name: c.name };
 
   // Razorpay Diagnostics and Verification Endpoint
-  app.get("/api/admin/razorpay/status", requireAdmin, (req, res) => {
+  app.get("/api/admin/razorpay/status", requireAdmin, async (req, res) => {
     try {
       const keyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || "";
       const secret = process.env.RAZORPAY_KEY_SECRET || "";
@@ -140,22 +143,22 @@ async function startServer() {
   });
 
   // Breath Protocols API (Loaded on runtime for Breathe with Reshmi)
-  app.get("/api/breath/protocols", (req, res) => {
+  app.get("/api/breath/protocols", async (req, res) => {
     try {
-      const protocols = db.getBreathProtocols();
+      const protocols = await db.getBreathProtocols();
       res.json({ protocols });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post("/api/admin/breath/protocols", requireAdmin, (req, res) => {
+  app.post("/api/admin/breath/protocols", requireAdmin, async (req, res) => {
     try {
       const protocol = req.body;
       if (!protocol || !protocol.id || !protocol.name) {
         return res.status(400).json({ error: "Missing required protocol fields" });
       }
-      db.updateBreathProtocol(protocol);
+      await db.updateBreathProtocol(protocol);
       res.json({ success: true, protocol });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -163,9 +166,9 @@ async function startServer() {
   });
 
   // Website Customization Settings API
-  app.get("/api/settings", (req, res) => {
+  app.get("/api/settings", async (req, res) => {
     try {
-      const settings = db.getAllSettings();
+      const settings = await db.getAllSettings();
       res.json({ settings });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -173,97 +176,87 @@ async function startServer() {
   });
 
   // Dynamic Instagram Reels API
-  app.get("/api/reels", (req, res) => {
+  app.get("/api/reels", async (req, res) => {
     try {
-      const reels = db.getInstagramReels();
+      const reels = await db.getInstagramReels();
       res.json({ reels });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post("/api/admin/reels", requireAdmin, (req, res) => {
+  app.post("/api/admin/reels", requireAdmin, async (req, res) => {
     try {
       const reel = req.body;
       if (!reel || !reel.id || !reel.title) {
         return res.status(400).json({ error: "Missing required fields: id and title are mandatory." });
       }
-      db.addOrUpdateInstagramReel(reel);
-      res.json({ success: true, reels: db.getInstagramReels() });
+      await db.addOrUpdateInstagramReel(reel);
+      res.json({ success: true, reels: await db.getInstagramReels() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.delete("/api/admin/reels/:id", requireAdmin, (req, res) => {
+  app.delete("/api/admin/reels/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      db.deleteInstagramReel(id);
-      res.json({ success: true, reels: db.getInstagramReels() });
+      await db.deleteInstagramReel(id);
+      res.json({ success: true, reels: await db.getInstagramReels() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post("/api/admin/settings", requireAdmin, (req, res) => {
+  app.post("/api/admin/settings", requireAdmin, async (req, res) => {
     try {
       const { settings } = req.body;
       if (!settings || typeof settings !== "object") {
         return res.status(400).json({ error: "Invalid settings object" });
       }
       for (const [key, val] of Object.entries(settings)) {
-        db.updateSetting(key, String(val));
+        await db.updateSetting(key, String(val));
       }
-      res.json({ success: true, settings: db.getAllSettings() });
+      res.json({ success: true, settings: await db.getAllSettings() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
   // Health Resilience Assessment Submission -> Saved to Firebase & SQLite
-  app.post("/api/assessment/submit", (req, res) => {
+  // Health Resilience Assessment results (public form; input is validated and size-limited).
+  app.post("/api/assessment/submit", async (req, res) => {
     try {
-      const { overall, domains, answers, clientEmail, id } = req.body;
-      const assessmentId = id || `assess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      db.saveAssessment({
-        id: assessmentId,
+      const { overall, domains, answers, clientEmail } = req.body || {};
+      const cleanDomains: Record<string, number> = {};
+      for (const [k, v] of Object.entries(domains && typeof domains === "object" ? domains : {}).slice(0, 10)) {
+        cleanDomains[String(k).slice(0, 40)] = Number(v) || 0;
+      }
+      const id = `assess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      await db.saveAssessment({
+        id,
         overall: Number(overall) || 0,
-        domains: domains || {},
-        answers: Array.isArray(answers) ? answers : [],
-        clientEmail: clientEmail || ""
+        domains: cleanDomains,
+        answers: (Array.isArray(answers) ? answers : []).slice(0, 100).map((n: any) => Number(n) || 0),
+        clientEmail: isEmail(clientEmail) ? clientEmail : ""
       });
-      res.json({ success: true, id: assessmentId });
+      res.json({ success: true, id });
     } catch (err: any) {
       console.error("Assessment submission error:", err);
-      res.status(500).json({ error: err.message || "Failed to save assessment" });
+      res.status(500).json({ error: "Failed to save assessment" });
     }
   });
 
-  // Firebase Status & Details Endpoint
-  app.get("/api/firebase/status", async (req, res) => {
-    try {
-      const isOnline = await db.syncAllToFirestore().then(() => true).catch(() => false);
-      res.json({
-        success: true,
-        isConfigured: true,
-        projectId: "gen-lang-client-0060610435",
-        firestoreDatabaseId: "ai-studio-fitwithreshmi-8fe5a15d-0804-4fdd-b026-9b5b30d8cef2",
-        authDomain: "gen-lang-client-0060610435.firebaseapp.com",
-        storageBucket: "gen-lang-client-0060610435.firebasestorage.app",
-        collections: [
-          "clients",
-          "bookings",
-          "sessions",
-          "breath_protocols",
-          "instagram_reels",
-          "site_settings",
-          "assessments"
-        ],
-        online: isOnline
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
+  // Database connection status (admin only)
+  app.get("/api/firebase/status", requireAdmin, async (req, res) => {
+    res.json({
+      success: true,
+      isConfigured: Boolean(db.projectId),
+      projectId: db.projectId,
+      firestoreDatabaseId: db.databaseId,
+      collections: ["clients", "bookings", "sessions", "breath_protocols", "instagram_reels", "site_settings", "assessments"],
+      online: await db.ping(),
+    });
   });
 
   // API Routes
@@ -436,12 +429,12 @@ async function startServer() {
       }
 
       // DB Persistence
-      let client = db.getClientByEmail(patientEmail);
+      let client = await db.getClientByEmail(patientEmail);
       if (!client) {
-        client = db.createClient(patientEmail, patientName);
+        client = await db.createClient(patientEmail, patientName);
       }
       
-      db.createBooking(client.id, date, time, notes, meetLink, eventId);
+      await db.createBooking(client.id, date, time, notes, meetLink, eventId);
 
       res.json({ success: true, eventLink: eventLink });
     } catch (err: any) {
@@ -450,20 +443,20 @@ async function startServer() {
     }
   });
 
-  app.get('/api/admin/bookings', requireAdmin, (req, res) => {
+  app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
     try {
-      const bookings = db.getAdminBookings();
+      const bookings = await db.getAdminBookings();
       res.json({ bookings });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post('/api/admin/sessions', requireAdmin, (req, res) => {
+  app.post('/api/admin/sessions', requireAdmin, async (req, res) => {
     try {
       const { bookingId, transcription, plan } = req.body;
-      if (transcription) db.saveSessionTransciption(bookingId, transcription);
-      if (plan) db.saveSessionPlan(bookingId, plan);
+      if (transcription) await db.saveSessionTransciption(bookingId, transcription);
+      if (plan) await db.saveSessionPlan(bookingId, plan);
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -471,16 +464,15 @@ async function startServer() {
   });
 
   // ---- Client accounts ---------------------------------------------------------------------
-  const isEmail = (e: any) => typeof e === 'string' && e.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 
-  app.post('/api/client/login', (req, res) => {
+  app.post('/api/client/login', async (req, res) => {
     try {
       const ip = clientIp(req);
       if (!allowLoginAttempt(`client:${ip}`)) {
         return res.status(429).json({ error: "Too many attempts. Please try again in a few minutes." });
       }
       const { email, password } = req.body || {};
-      const client = isEmail(email) ? db.getClientByEmail(email) : null;
+      const client = isEmail(email) ? await db.getClientByEmail(email) : null;
       if (!client || typeof password !== 'string' || !verifyPassword(password, client.password_hash)) {
         return res.status(401).json({ error: "Incorrect email or password" });
       }
@@ -493,7 +485,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/client/signup', (req, res) => {
+  app.post('/api/client/signup', async (req, res) => {
     try {
       const { email, name, password } = req.body || {};
       if (!isEmail(email) || typeof name !== 'string' || !name.trim() || name.length > 100) {
@@ -502,12 +494,12 @@ async function startServer() {
       if (typeof password !== 'string' || password.length < 8 || password.length > 200) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
       }
-      if (db.getClientByEmail(email)) {
+      if (await db.getClientByEmail(email)) {
         return res.status(400).json({
           error: "An account with this email already exists. Please sign in, or contact Reshmi if you have booked before and need access."
         });
       }
-      const client = db.createClient(email.trim(), name.trim(), hashPassword(password));
+      const client = await db.createClient(email.trim(), name.trim(), hashPassword(password));
       startSession(res, { role: 'client', clientId: client.id });
       res.json({ client: publicClient(client) });
     } catch (err: any) {
@@ -525,8 +517,8 @@ async function startServer() {
       }
       const verified = await verifyGoogleIdToken(req.body?.idToken);
       if (!verified) return res.status(401).json({ error: "Google sign-in could not be verified" });
-      let client = db.getClientByEmail(verified.email);
-      if (!client) client = db.createClient(verified.email, verified.name);
+      let client = await db.getClientByEmail(verified.email);
+      if (!client) client = await db.createClient(verified.email, verified.name);
       startSession(res, { role: 'client', clientId: client.id });
       res.json({ client: publicClient(client) });
     } catch (err: any) {
@@ -535,29 +527,29 @@ async function startServer() {
     }
   });
 
-  app.get('/api/client/me', (req, res) => {
+  app.get('/api/client/me', async (req, res) => {
     const s = getClientSession(req);
-    const client = s ? db.getClientById(s.clientId) : null;
+    const client = s ? await db.getClientById(s.clientId) : null;
     if (!client) return res.status(401).json({ error: "Not signed in" });
     res.json({ client: publicClient(client) });
   });
 
-  app.post('/api/client/logout', (req, res) => {
+  app.post('/api/client/logout', async (req, res) => {
     endSession(res, 'client');
     res.json({ success: true });
   });
 
   // Clients can only ever read their own bookings (the id comes from the signed session cookie).
-  app.get('/api/client/bookings', requireClient, (req, res) => {
+  app.get('/api/client/bookings', requireClient, async (req, res) => {
     try {
-      res.json({ bookings: db.getClientBookings((req as any).clientId) });
+      res.json({ bookings: await db.getClientBookings((req as any).clientId) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
   // ---- Admin login ---------------------------------------------------------------------------
-  app.post('/api/admin/login', (req, res) => {
+  app.post('/api/admin/login', async (req, res) => {
     try {
       const ip = clientIp(req);
       if (!allowLoginAttempt(`admin:${ip}`)) {
@@ -578,12 +570,12 @@ async function startServer() {
     }
   });
 
-  app.get('/api/admin/me', (req, res) => {
+  app.get('/api/admin/me', async (req, res) => {
     if (!getAdminSession(req)) return res.status(401).json({ error: "Not signed in" });
     res.json({ success: true });
   });
 
-  app.post('/api/admin/logout', (req, res) => {
+  app.post('/api/admin/logout', async (req, res) => {
     endSession(res, 'admin');
     res.json({ success: true });
   });
@@ -693,19 +685,13 @@ Hard rules:
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('*', async (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    // Sync all data models to Cloud Firestore in background
-    db.syncAllToFirestore().then(() => {
-      console.log("Firebase Firestore synchronization active.");
-    }).catch((e) => {
-      console.error("Firebase initial sync caught error:", e);
-    });
   });
 }
 
