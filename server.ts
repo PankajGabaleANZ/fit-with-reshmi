@@ -259,6 +259,31 @@ async function startServer() {
     });
   });
 
+  // One demo client + booking + session note so the admin screens have something to show.
+  // Safe to press repeatedly: it reuses the demo client and only adds the booking once.
+  app.post("/api/admin/demo-record", requireAdmin, async (req, res) => {
+    try {
+      const email = "demo.client@example.com";
+      let client = await db.getClientByEmail(email);
+      if (!client) client = await db.createClient(email, "Demo Client (sample)");
+      const existing = (await db.getClientBookings(client.id)).find((b: any) => b.notes?.startsWith("[Demo]"));
+      if (existing) return res.json({ success: true, created: false, bookingId: existing.id });
+      const bookingId = await db.createBooking(
+        client.id,
+        format(addDays(new Date(), 7), "yyyy-MM-dd"),
+        "10:00 AM",
+        "[Demo] Sample Health Clarity Session booking. Safe to ignore.",
+        null,
+        null
+      );
+      await db.saveSessionTransciption(bookingId, "Sample session notes: energy dips in the afternoon, irregular sleep, wants to improve gut health.");
+      res.json({ success: true, created: true, bookingId });
+    } catch (err: any) {
+      console.error("Demo record error:", err);
+      res.status(500).json({ error: "Could not create the demo record" });
+    }
+  });
+
   // API Routes
   app.post("/api/create-razorpay-order", async (req, res) => {
     try {

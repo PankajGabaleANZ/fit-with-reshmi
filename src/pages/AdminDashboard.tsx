@@ -134,6 +134,22 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleCreateDemo = async () => {
+    setFirebaseSyncMsg('');
+    try {
+      const res = await fetch('/api/admin/demo-record', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      setFirebaseSyncMsg(data.created ? 'Demo record created: see Overview / Clients.' : 'Demo record already exists.');
+      const bRes = await fetch('/api/admin/bookings');
+      const bData = await bRes.json();
+      setBookings(bData.bookings || []);
+      setTimeout(() => setFirebaseSyncMsg(''), 5000);
+    } catch (err: any) {
+      setFirebaseSyncMsg('Error: ' + (err.message || 'Failed'));
+    }
+  };
+
   useEffect(() => {
     if (selectedBookingId) {
       const b = bookings.find(b => b.id === selectedBookingId);
@@ -1323,6 +1339,12 @@ Please output a structured Markdown report using the following template:
                 >
                   <RefreshCw size={16} className={isSyncingFirebase ? "animate-spin" : ""} />
                   {isSyncingFirebase ? "Checking..." : "Re-check connection"}
+                </button>
+                <button
+                  onClick={handleCreateDemo}
+                  className="px-4 py-2.5 bg-sakura/40 text-momo border border-momo/20 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-sakura/70 transition-colors"
+                >
+                  Create demo record
                 </button>
               </div>
 
