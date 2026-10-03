@@ -1,69 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
-
-const QUESTIONS = [
-  {
-    id: 'q1',
-    title: 'What health challenge are you currently facing?',
-    subtitle: 'Select the one that resonates most with you.',
-    options: [
-      'PMOS (PCOS) / Fertility issues',
-      'Thyroid Issues / Hashimoto',
-      'Stubborn Weight / Fat Loss Resistance',
-      'Inflammation / Type 2 Diabetes',
-      'Perimenopause / Menopause',
-      'Gut Health',
-      'Anxiety, Nervous System, Dysregulation'
-    ]
-  },
-  {
-    id: 'q2',
-    title: 'How long have you been experiencing this?',
-    subtitle: "There's no wrong answer \u2014 we just want to understand your journey.",
-    options: [
-      'Less than 6 months',
-      '6 months \u2013 1 year',
-      '1 \u2013 3 years',
-      '3+ years'
-    ]
-  },
-  {
-    id: 'q3',
-    title: 'Have you tried any treatments or coaching before?',
-    subtitle: "It's okay if you have \u2014 this will help Reshmi understand your history.",
-    options: [
-      'No, this would be my first time',
-      'Yes, medications / pills from doctors',
-      'Yes, diet plans or fitness programs',
-      'Yes, multiple things but nothing worked'
-    ]
-  },
-  {
-    id: 'q4',
-    title: 'What is your main goal right now?',
-    subtitle: 'What would success look like for you in 90 days?',
-    options: [
-      'Lose weight and feel confident',
-      'Balance my hormones and regulate periods',
-      'More energy and less fatigue',
-      'Fix skin, hair, and gut issues',
-      'Overall health transformation'
-    ]
-  },
-  {
-    id: 'q5',
-    title: 'How ready are you to start your healing journey?',
-    subtitle: "Be honest \u2014 there's no pressure. Just clarity.",
-    options: [
-      "I'm ready to start NOW \uD83D\uDD25",
-      "I'm interested but want to learn more",
-      "I'm exploring my options"
-    ]
-  }
-];
+import { useContent } from '../lib/useContent';
 
 export default function Onboarding({ onComplete }: { onComplete: (answers: Record<string, string>) => void }) {
+  const QUESTIONS = useContent().onboarding;
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 

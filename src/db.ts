@@ -294,11 +294,11 @@ export async function createClient(email: string, name: string, passwordHash: st
   return client;
 }
 
-export async function createBooking(clientId: number, date: string, time: string, notes: string | null, meetLink: string | null, eventId: string | null) {
+export async function createBooking(clientId: number, date: string, time: string, notes: string | null, meetLink: string | null, eventId: string | null, extra: Record<string, any> = {}) {
   const id = await nextId('bookings');
   await col('bookings').doc(String(id)).set({
     id, client_id: clientId, date, time, notes, status: 'Upcoming',
-    meet_link: meetLink, event_id: eventId, created_at: nowIso(),
+    meet_link: meetLink, event_id: eventId, created_at: nowIso(), ...extra,
   });
   return id;
 }
@@ -367,4 +367,42 @@ export async function ping(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// ---- Editable configuration documents (site content, questionnaire) -------------------------------
+export async function getConfig(name: string): Promise<any | null> {
+  const snap = await col('config').doc(name).get();
+  return snap.exists ? snap.data() : null;
+}
+
+export async function setConfig(name: string, data: any) {
+  await col('config').doc(name).set({ ...data, updated_at: nowIso() });
+}
+
+// ---- Slot reservations: one document per booked slot, so two people can never take the same one ----
+const slotId = (date: string, minutes: number) => `${date}_${minutes}`;
+
+/** Returns false if the slot was already taken. */
+export async function reserveSlot(date: string, minutes: number): Promise<boolean> {
+  try {
+    await col('slots').doc(slotId(date, minutes)).create({ date, minutes, created_at: nowIso() });
+    return true;
+  } catch (err: any) {
+    if (err?.code === 6 || /already exists/i.test(String(err?.message))) return false;
+    throw err;
+  }
+}
+
+export async function releaseSlot(date: string, minutes: number) {
+  await col('slots').doc(slotId(date, minutes)).delete();
+}
+
+export async function getBookingsOnDate(date: string): Promise<any[]> {
+  const snap = await col('bookings').where('date', '==', date).get();
+  return snap.docs.map((d) => d.data()).filter((b) => b.status !== 'Cancelled');
+}
+
+export async function getBookingById(id: number): Promise<any> {
+  const snap = await col('bookings').doc(String(id)).get();
+  return snap.exists ? snap.data() : undefined;
 }

@@ -7,9 +7,15 @@ import {
   ExternalLink, RefreshCw, Plus, Play, Pause, ShieldCheck,
   Database
 } from 'lucide-react';
+import ContentEditor from '../components/admin/ContentEditor';
+import SessionsTimes from '../components/admin/SessionsTimes';
+import ReelsEditor from '../components/admin/ReelsEditor';
+import QuestionnaireEditor from '../components/admin/QuestionnaireEditor';
+import ResultsView from '../components/admin/ResultsView';
+import { Film, ListChecks, BarChart3, Clock as ClockIcon } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'ai-assistant' | 'customization' | 'breath-tools' | 'razorpay-test' | 'clients' | 'firebase'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'ai-assistant' | 'customization' | 'breath-tools' | 'razorpay-test' | 'clients' | 'firebase' | 'sessions' | 'reels' | 'questionnaires' | 'results'>('overview');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -481,7 +487,47 @@ Please output a structured Markdown report using the following template:
             }`}
           >
             <Settings size={17} />
-            <span>Website Customization</span>
+            <span>Website Content</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('sessions')}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs uppercase font-bold tracking-wider transition-colors ${
+              activeTab === 'sessions' ? 'bg-momo text-mashiro shadow-sm' : 'hover:bg-sakura/50 text-momo'
+            }`}
+          >
+            <ClockIcon size={17} />
+            <span>Sessions & Times</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('reels')}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs uppercase font-bold tracking-wider transition-colors ${
+              activeTab === 'reels' ? 'bg-momo text-mashiro shadow-sm' : 'hover:bg-sakura/50 text-momo'
+            }`}
+          >
+            <Film size={17} />
+            <span>Instagram Reels</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('questionnaires')}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs uppercase font-bold tracking-wider transition-colors ${
+              activeTab === 'questionnaires' ? 'bg-momo text-mashiro shadow-sm' : 'hover:bg-sakura/50 text-momo'
+            }`}
+          >
+            <ListChecks size={17} />
+            <span>Questionnaires</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('results')}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs uppercase font-bold tracking-wider transition-colors ${
+              activeTab === 'results' ? 'bg-momo text-mashiro shadow-sm' : 'hover:bg-sakura/50 text-momo'
+            }`}
+          >
+            <BarChart3 size={17} />
+            <span>Assessment Results</span>
           </button>
 
           <button
@@ -518,7 +564,7 @@ Please output a structured Markdown report using the following template:
         <div className="p-4 border-t border-momo/10 mt-auto">
           <div className="bg-mashiro p-3.5 rounded-2xl border border-momo/20 text-center">
             <span className="text-[10px] uppercase font-bold text-momo/60 block">Direct URL Route</span>
-            <code className="text-xs font-mono font-bold text-momo mt-1 block select-all">/#/admin</code>
+            <code className="text-xs font-mono font-bold text-momo mt-1 block select-all">/admin</code>
           </div>
         </div>
       </div>
@@ -597,6 +643,27 @@ Please output a structured Markdown report using the following template:
                               <span>Meet Link</span>
                             </a>
                           )}
+                          <select
+                            value={apt.status || 'Upcoming'}
+                            onClick={e => e.stopPropagation()}
+                            onChange={async e => {
+                              e.stopPropagation();
+                              const status = e.target.value;
+                              const res = await fetch(`/api/admin/bookings/${apt.id}/status`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status })
+                              });
+                              if (res.ok) setBookings(prev => prev.map(b => (b.id === apt.id ? { ...b, status } : b)));
+                              else alert('Could not update the booking status.');
+                            }}
+                            className="px-2 py-1.5 rounded-lg border border-momo/30 bg-mashiro text-xs font-bold text-momo"
+                            aria-label="Booking status"
+                          >
+                            <option>Upcoming</option>
+                            <option>Completed</option>
+                            <option>Cancelled</option>
+                          </select>
                           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                             apt.plan ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                           }`}>
@@ -1067,123 +1134,11 @@ Please output a structured Markdown report using the following template:
           )}
 
           {/* TAB 4: WEBSITE CUSTOMIZATION */}
-          {activeTab === 'customization' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h1 className="text-3xl font-serif font-bold text-momo">Website Content & Pricing Customization</h1>
-                  <p className="text-xs text-momo font-bold uppercase tracking-wider mt-1">
-                    Directly change copy, prices, contact emails, and headline branding live on the platform.
-                  </p>
-                </div>
-              </div>
-
-              {settingsSuccessMsg && (
-                <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-2xl text-xs font-bold flex items-center gap-2">
-                  <CheckCircle size={16} />
-                  <span>{settingsSuccessMsg}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSaveSettings} className="bg-mashiro p-8 rounded-3xl border border-momo/20 shadow-sm space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs uppercase font-bold text-momo mb-2">Practitioner Brand Name</label>
-                    <input
-                      type="text"
-                      value={siteSettings.hero_title || ''}
-                      onChange={e => setSiteSettings({ ...siteSettings, hero_title: e.target.value })}
-                      className="w-full px-4 py-3 bg-mashiro border border-momo/30 rounded-xl text-sm font-bold text-momo focus:border-momo outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs uppercase font-bold text-momo mb-2">Practitioner Subtitle & Credentials</label>
-                    <input
-                      type="text"
-                      value={siteSettings.hero_subtitle || ''}
-                      onChange={e => setSiteSettings({ ...siteSettings, hero_subtitle: e.target.value })}
-                      className="w-full px-4 py-3 bg-mashiro border border-momo/30 rounded-xl text-sm font-bold text-momo focus:border-momo outline-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs uppercase font-bold text-momo mb-2">Core Philosophy / Tagline</label>
-                    <textarea
-                      rows={2}
-                      value={siteSettings.tagline || ''}
-                      onChange={e => setSiteSettings({ ...siteSettings, tagline: e.target.value })}
-                      className="w-full px-4 py-3 bg-mashiro border border-momo/30 rounded-xl text-xs font-medium text-momo focus:border-momo outline-none resize-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs uppercase font-bold text-momo mb-2">Top Banner Announcement</label>
-                    <input
-                      type="text"
-                      value={siteSettings.banner_announcement || ''}
-                      onChange={e => setSiteSettings({ ...siteSettings, banner_announcement: e.target.value })}
-                      className="w-full px-4 py-3 bg-mashiro border border-momo/30 rounded-xl text-xs font-medium text-momo focus:border-momo outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs uppercase font-bold text-momo mb-2">Official Contact Email</label>
-                    <input
-                      type="email"
-                      value={siteSettings.contact_email || ''}
-                      onChange={e => setSiteSettings({ ...siteSettings, contact_email: e.target.value })}
-                      className="w-full px-4 py-3 bg-mashiro border border-momo/30 rounded-xl text-sm font-bold text-momo focus:border-momo outline-none"
-                    />
-                  </div>
-
-                  <div className="border-t border-momo/10 pt-6 md:col-span-2">
-                    <h3 className="text-base font-serif font-bold text-momo mb-4">Pricing & Gateway Settings</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-xs uppercase font-bold text-momo mb-1">Currency Code</label>
-                        <input
-                          type="text"
-                          value={siteSettings.booking_fee_currency || 'INR'}
-                          onChange={e => setSiteSettings({ ...siteSettings, booking_fee_currency: e.target.value.toUpperCase() })}
-                          className="w-full px-4 py-2.5 bg-mashiro border border-momo/30 rounded-xl text-sm font-bold text-momo focus:border-momo outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs uppercase font-bold text-momo mb-1">Single Consult Price</label>
-                        <input
-                          type="text"
-                          value={siteSettings.single_consult_price || '2999'}
-                          onChange={e => setSiteSettings({ ...siteSettings, single_consult_price: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-mashiro border border-momo/30 rounded-xl text-sm font-bold text-momo focus:border-momo outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs uppercase font-bold text-momo mb-1">Vagal Program Price</label>
-                        <input
-                          type="text"
-                          value={siteSettings.vagal_program_price || '7999'}
-                          onChange={e => setSiteSettings({ ...siteSettings, vagal_program_price: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-mashiro border border-momo/30 rounded-xl text-sm font-bold text-momo focus:border-momo outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={isSavingSettings}
-                    className="px-8 py-4 bg-momo text-mashiro rounded-xl text-xs uppercase font-bold tracking-wider hover:bg-momo/90 transition-all flex items-center gap-2 shadow-md"
-                  >
-                    <Save size={16} />
-                    <span>{isSavingSettings ? 'Saving...' : 'Save Website Customizations'}</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          )}
+          {activeTab === 'customization' && <ContentEditor />}
+          {activeTab === 'sessions' && <SessionsTimes />}
+          {activeTab === 'reels' && <ReelsEditor />}
+          {activeTab === 'questionnaires' && <QuestionnaireEditor />}
+          {activeTab === 'results' && <ResultsView />}
 
           {/* TAB 5: AI SCRIBE */}
           {activeTab === 'ai-assistant' && (

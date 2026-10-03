@@ -5,34 +5,14 @@ import { initAuth, googleSignIn, getAccessToken } from '../lib/auth';
 import type { User } from 'firebase/auth';
 import Onboarding from '../components/Onboarding';
 import { useRazorpay } from 'react-razorpay';
-
-const SERVICES = [
-  {
-    id: 'discovery',
-    title: 'Initial Discovery Call',
-    duration: '15 Min',
-    price: 'Free',
-    description: 'A quick chat to discuss your goals and see if we are a good fit.'
-  },
-  {
-    id: 'consultation',
-    title: 'Comprehensive Consultation',
-    duration: '60 Min',
-    price: '$149',
-    description: 'Deep dive into your health history, current habits, and actionable roadmap.'
-  },
-  {
-    id: 'followup',
-    title: 'Follow-up Check-in',
-    duration: '30 Min',
-    price: '$75',
-    description: 'For existing clients to review progress and adjust protocols.'
-  }
-];
+import { formatPrice } from '../lib/content';
+import { useContent } from '../lib/useContent';
 
 export default function Booking() {
   const [step, setStep] = useState(1);
-  const [selectedService, setSelectedService] = useState(SERVICES[0]);
+  const { services: SERVICES, currency } = useContent();
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const selectedService = SERVICES.find(sv => sv.id === selectedServiceId) || SERVICES[0];
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   
@@ -160,13 +140,12 @@ export default function Booking() {
             setAvailableTimes(data.slots);
           } else {
             console.error(data.error || 'Failed to fetch slots');
-            // Fallback mock if calendar integration not yet set up
-            setAvailableTimes(['09:00 AM', '10:00 AM', '11:00 AM', '01:00 PM', '02:00 PM', '03:00 PM']);
+            setAvailableTimes([]);
           }
         })
         .catch(err => {
           console.error(err);
-          setAvailableTimes(['09:00 AM', '10:00 AM', '11:00 AM', '01:00 PM']);
+          setAvailableTimes([]);
         })
         .finally(() => setIsLoadingTimes(false));
     }
@@ -202,10 +181,17 @@ export default function Booking() {
           time: selectedTime,
           patientName: patientName,
           patientEmail: patientEmail,
-          notes: description
+          notes: description,
+          serviceId: selectedService.id
         })
       });
 
+      if (res.status === 400 || res.status === 409) {
+        // The server refused (e.g. the time was just taken): tell the person, don't try other routes.
+        const data = await res.json().catch(() => ({}));
+        setBookingError(data.error || 'That time is not available. Please pick another.');
+        return;
+      }
       if (!res.ok) {
         throw new Error('Failed to create calendar event via backend');
       }
@@ -221,10 +207,10 @@ export default function Booking() {
       }
       try {
         const startTime = new Date(`${selectedDate} ${selectedTime}`);
-        const endTime = new Date(startTime.getTime() + parseInt(selectedService.duration) * 60000);
+        const endTime = new Date(startTime.getTime() + selectedService.durationMinutes * 60000);
 
         const event = {
-          summary: `${selectedService.title} with Fit with Reshmi`,
+          summary: `${selectedService.title} with HealthwithReshmi`,
           description: `Description: ${description}`,
           start: { dateTime: startTime.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
           end: { dateTime: endTime.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
@@ -259,16 +245,14 @@ export default function Booking() {
     if (step === 1 && selectedDate && selectedTime) {
       setStep(2);
     } else if (step === 2) {
-      if (selectedService.price !== 'Free') {
+      if (selectedService.price > 0) {
         // Need to pay
         setIsInitializingPayment(true);
         try {
-          // Parse price (e.g. '$149' -> 149)
-          const amount = parseInt(selectedService.price.replace(/[^0-9]/g, ''));
           const res = await fetch('/api/create-razorpay-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount, currency: "INR" }) // Assuming INR for razorpay
+            body: JSON.stringify({ serviceId: selectedService.id }) // the server decides the price
           });
           const order = await res.json();
           if (order.id) {
@@ -276,7 +260,7 @@ export default function Booking() {
               key: (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || '', // Enter the Key ID generated from the Dashboard
               amount: order.amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
               currency: order.currency,
-              name: "Fit with Reshmi",
+              name: "HealthwithReshmi",
               description: selectedService.title,
               order_id: order.id, //This is a sample Order ID. Pass the `id` obtained in the response of create-razorpay-order
               handler: function (response: any) {
@@ -445,7 +429,7 @@ export default function Booking() {
                     {SERVICES.map((service) => (
                       <div 
                         key={service.id}
-                        onClick={() => setSelectedService(service)}
+                        onClick={() => setSelectedServiceId(service.id)}
                         className={`p-5 rounded-2xl border cursor-pointer transition-all ${
                           selectedService.id === service.id 
                             ? 'border-momo bg-sakura shadow-[0_0_15px_rgba(245,143,152,0.1)]' 
@@ -454,11 +438,11 @@ export default function Booking() {
                       >
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="text-base font-bold text-momo">{service.title}</h3>
-                          <span className="font-medium text-momo text-sm">{service.price}</span>
+                          <span className="font-medium text-momo text-sm">{formatPrice(service.price, currency)}</span>
                         </div>
                         <p className="text-momo/70 text-sm mb-3">{service.description}</p>
                         <div className="flex items-center gap-4 text-xs text-momo/60 font-medium">
-                          <span className="flex items-center gap-1"><Clock size={14} /> {service.duration}</span>
+                          <span className="flex items-center gap-1"><Clock size={14} /> {service.durationMinutes} Min</span>
                           <span className="flex items-center gap-1"><Video size={14} /> Google Meet</span>
                         </div>
                       </div>
@@ -590,7 +574,7 @@ export default function Booking() {
                   <>Next Step <ArrowRight size={18} /></>
                 ) : (
                   <>
-                    {isInitializingPayment ? 'Preparing...' : isBooking ? 'Booking...' : (selectedService.price !== 'Free' ? 'Continue to Payment' : 'Confirm Booking')}
+                    {isInitializingPayment ? 'Preparing...' : isBooking ? 'Booking...' : (selectedService.price > 0 ? 'Continue to Payment' : 'Confirm Booking')}
                     {!isBooking && !isInitializingPayment && <CheckCircle2 size={18} />}
                   </>
                 )}

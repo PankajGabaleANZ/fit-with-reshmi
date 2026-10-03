@@ -191,3 +191,46 @@ export const DOMAIN_LABELS: Record<DomainKey, string> = {
 export const ALL_QUESTIONS = DOMAIN_ORDER.flatMap((domain) =>
   AUDIT_QUESTIONS[domain].questions.map((q) => ({ ...q, domain }))
 );
+// ---- Editable questionnaire (stored in the database; the data above is the starting default) ----
+export interface AssessmentConfig {
+  domains: {
+    key: string;
+    label: string;
+    title: string;
+    subtitle: string;
+    questions: AuditQuestion[];
+  }[];
+}
+
+export const DEFAULT_ASSESSMENT_CONFIG: AssessmentConfig = {
+  domains: DOMAIN_ORDER.map((key) => ({
+    key,
+    label: DOMAIN_LABELS[key],
+    title: AUDIT_QUESTIONS[key].title,
+    subtitle: AUDIT_QUESTIONS[key].subtitle,
+    questions: AUDIT_QUESTIONS[key].questions,
+  })),
+};
+
+/** Flat question list in order, tagged with the domain key. */
+export function flattenQuestions(cfg: AssessmentConfig) {
+  return cfg.domains.flatMap((d) => d.questions.map((q) => ({ ...q, domain: d.key })));
+}
+
+/** Score each domain out of 100 from the chosen option points (works for any number of questions). */
+export function scoreAssessment(cfg: AssessmentConfig, answers: number[]) {
+  let i = 0;
+  const domains: Record<string, number> = {};
+  for (const d of cfg.domains) {
+    let got = 0;
+    let max = 0;
+    for (const q of d.questions) {
+      got += answers[i++] ?? 0;
+      max += Math.max(0, ...q.options.map((o) => o.points));
+    }
+    domains[d.key] = max > 0 ? Math.round((got / max) * 100) : 0;
+  }
+  const keys = Object.keys(domains);
+  const overall = keys.length ? Math.round(keys.reduce((s, k) => s + domains[k], 0) / keys.length) : 0;
+  return { overall, domains };
+}
