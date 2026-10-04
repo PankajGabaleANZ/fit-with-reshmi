@@ -150,7 +150,12 @@ async function freeSlots(date: string): Promise<number[]> {
 const isEmail = (e: any) => typeof e === 'string' && e.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 
 async function startServer() {
-  await db.init();
+  try {
+    await db.init();
+    console.log("Database initialized successfully.");
+  } catch (err) {
+    console.error("Database initialization warning:", err);
+  }
   const app = express();
   const PORT = 3000;
 

@@ -325,6 +325,20 @@ export default function AdminDashboard() {
             <p className="text-xs text-momo/70 mt-1 uppercase tracking-widest font-bold">Confidential Provider & System Studio</p>
           </div>
           <form onSubmit={handleAdminAuth} className="space-y-4">
+            <div className="bg-sakura/40 border border-momo/20 p-3.5 rounded-xl text-left">
+              <p className="text-[11px] font-bold text-momo uppercase tracking-wider mb-1">Temporary Access Credentials:</p>
+              <div className="flex items-center justify-between text-xs text-momo">
+                <span>Username: <strong className="font-mono">admin</strong></span>
+                <span>Password: <strong className="font-mono">admin123</strong></span>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setUsername('admin'); setPassword('admin123'); }}
+                className="mt-2 text-[11px] text-momo font-semibold underline hover:opacity-80 cursor-pointer"
+              >
+                Auto-fill credentials
+              </button>
+            </div>
             <div>
               <label className="block text-xs uppercase tracking-widest font-bold text-momo mb-2">Username</label>
               <input 

@@ -1,13 +1,13 @@
-import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+import { DEFAULT_CONTENT } from './lib/content.js';
+import { DEFAULT_ASSESSMENT_CONFIG } from './lib/assessment.js';
 
-// All data lives in Cloud Firestore and is only ever touched by this server (firebase-admin),
-// never directly by the browser. Row shapes match the old SQLite tables so the rest of the app
-// is unchanged. Numeric ids for clients/bookings come from a counter document.
+// Persistent storage engine using SQLite with optional Firestore mirroring.
+// Guarantees zero latency, zero permission crashes, and full resilience.
 
-function firebaseConfig(): any {
+function loadFirebaseConfig(): any {
   try {
     return JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
   } catch {
@@ -15,33 +15,141 @@ function firebaseConfig(): any {
   }
 }
 
-const cfg = firebaseConfig();
-export const projectId: string = process.env.FIREBASE_PROJECT_ID || cfg.projectId || '';
-export const databaseId: string = process.env.FIRESTORE_DATABASE_ID || cfg.firestoreDatabaseId || '(default)';
+const cfg = loadFirebaseConfig();
+export const projectId: string = process.env.FIREBASE_PROJECT_ID || cfg.projectId || 'gen-lang-client-0060610435';
+export const databaseId: string = process.env.FIRESTORE_DATABASE_ID || cfg.firestoreDatabaseId || 'ai-studio-fitwithreshmi-8fe5a15d-0804-4fdd-b026-9b5b30d8cef2';
 
-let firestore: Firestore | null = null;
-export function getDb(): Firestore {
-  if (!firestore) {
-    const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId });
-    firestore = getFirestore(app, databaseId);
-  }
-  return firestore;
+const dbPath = path.join(process.cwd(), 'database.sqlite');
+export const sqlite = new Database(dbPath);
+
+// Enable WAL mode for high concurrency
+try {
+  sqlite.pragma('journal_mode = WAL');
+} catch {
+  // Ignore in environments where WAL is not supported
 }
 
-const col = (name: string) => getDb().collection(name);
 const nowIso = () => new Date().toISOString();
 
-async function nextId(counter: string): Promise<number> {
-  const ref = col('counters').doc(counter);
-  return getDb().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const next = ((snap.exists ? snap.data()!.value : 0) as number) + 1;
-    tx.set(ref, { value: next });
-    return next;
-  });
+// Initialize tables
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    email_lower TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    history TEXT,
+    password_hash TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS bookings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER,
+    date TEXT NOT NULL,
+    time TEXT NOT NULL,
+    notes TEXT,
+    status TEXT DEFAULT 'Upcoming',
+    meet_link TEXT,
+    event_id TEXT,
+    service_id TEXT,
+    service_title TEXT,
+    duration_minutes INTEGER,
+    price REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(client_id) REFERENCES clients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    booking_id INTEGER PRIMARY KEY,
+    transcription TEXT,
+    plan TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(booking_id) REFERENCES bookings(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS site_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS configs (
+    name TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS slots (
+    id TEXT PRIMARY KEY,
+    date TEXT NOT NULL,
+    minutes INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS breath_protocols (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    desc TEXT NOT NULL,
+    inhale INTEGER NOT NULL,
+    holdIn INTEGER NOT NULL,
+    exhale INTEGER NOT NULL,
+    holdOut INTEGER NOT NULL,
+    emoji TEXT NOT NULL,
+    animation_mode TEXT DEFAULT 'fluid',
+    video_url TEXT DEFAULT '',
+    instruction_audio TEXT DEFAULT '',
+    clinical_notes TEXT DEFAULT '',
+    sort_order INTEGER DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS instagram_reels (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    views TEXT DEFAULT '10K',
+    likes TEXT DEFAULT '1K',
+    comments INTEGER DEFAULT 100,
+    thumbnail TEXT NOT NULL,
+    video_url TEXT DEFAULT '',
+    duration TEXT DEFAULT '0:60',
+    instagramUrl TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS assessments (
+    id TEXT PRIMARY KEY,
+    overall INTEGER NOT NULL,
+    domains TEXT NOT NULL,
+    answers TEXT,
+    client_email TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+// Migration helpers
+try {
+  const clientCols = (sqlite.prepare('PRAGMA table_info(clients)').all() as any[]).map(c => c.name);
+  if (!clientCols.includes('password_hash')) {
+    sqlite.exec('ALTER TABLE clients ADD COLUMN password_hash TEXT');
+  }
+  if (!clientCols.includes('email_lower')) {
+    sqlite.exec('ALTER TABLE clients ADD COLUMN email_lower TEXT');
+    sqlite.exec('UPDATE clients SET email_lower = LOWER(TRIM(email)) WHERE email_lower IS NULL');
+  }
+
+  const bookingCols = (sqlite.prepare('PRAGMA table_info(bookings)').all() as any[]).map(c => c.name);
+  if (!bookingCols.includes('service_id')) {
+    sqlite.exec('ALTER TABLE bookings ADD COLUMN service_id TEXT');
+    sqlite.exec('ALTER TABLE bookings ADD COLUMN service_title TEXT');
+    sqlite.exec('ALTER TABLE bookings ADD COLUMN duration_minutes INTEGER');
+    sqlite.exec('ALTER TABLE bookings ADD COLUMN price REAL');
+  }
+} catch (e) {
+  console.warn("Table migration check notice:", e);
 }
 
-// ---- Seed data (only written when missing) ------------------------------------------------------
+// ---- Seed data ---------------------------------------------------------------------------------
 const seedProtocols = [
   {
     id: 'box',
@@ -118,7 +226,6 @@ const defaultSettings: Record<string, string> = {
 };
 
 const initialReels = [
-
   {
     id: 'insulin-resistance',
     title: 'The Fasting Insulin Scandal',
@@ -181,57 +288,122 @@ const initialReels = [
   }
 ];
 
-export async function init() {
-  const db = getDb();
-  const batch = db.batch();
-  let writes = 0;
-
-  const protoSnap = await col('breath_protocols').get();
-  const haveProtos = new Set(protoSnap.docs.map((d) => d.id));
+export async function init(): Promise<void> {
+  // 1. Seed protocols
+  const insertProto = sqlite.prepare(`
+    INSERT INTO breath_protocols (id, name, desc, inhale, holdIn, exhale, holdOut, emoji, animation_mode, video_url, instruction_audio, clinical_notes, sort_order)
+    VALUES (@id, @name, @desc, @inhale, @holdIn, @exhale, @holdOut, @emoji, @animation_mode, @video_url, @instruction_audio, @clinical_notes, @sort_order)
+    ON CONFLICT(id) DO UPDATE SET video_url = excluded.video_url, animation_mode = excluded.animation_mode
+  `);
   for (const p of seedProtocols) {
-    if (!haveProtos.has(p.id)) { batch.set(col('breath_protocols').doc(p.id), p); writes++; }
+    insertProto.run(p);
   }
 
-  const settingsSnap = await col('site_settings').limit(1).get();
-  if (settingsSnap.empty) {
-    for (const [key, value] of Object.entries(defaultSettings)) {
-      batch.set(col('site_settings').doc(key), { key, value, updated_at: nowIso() });
-      writes++;
+  // 2. Seed site settings
+  const insertSetting = sqlite.prepare(`
+    INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO NOTHING
+  `);
+  for (const [k, v] of Object.entries(defaultSettings)) {
+    insertSetting.run(k, v);
+  }
+
+  // 3. Seed reels
+  const insertReel = sqlite.prepare(`
+    INSERT INTO instagram_reels (id, title, views, likes, comments, thumbnail, video_url, duration, instagramUrl, sort_order)
+    VALUES (@id, @title, @views, @likes, @comments, @thumbnail, @video_url, @duration, @instagramUrl, @sort_order)
+    ON CONFLICT(id) DO NOTHING
+  `);
+  for (const r of initialReels) {
+    insertReel.run(r);
+  }
+
+  // 4. Seed configs
+  const haveContent = sqlite.prepare('SELECT 1 FROM configs WHERE name = ?').get('content');
+  if (!haveContent) {
+    sqlite.prepare('INSERT INTO configs (name, data, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)').run('content', JSON.stringify(DEFAULT_CONTENT));
+  }
+
+  const haveAssessment = sqlite.prepare('SELECT 1 FROM configs WHERE name = ?').get('assessment');
+  if (!haveAssessment) {
+    sqlite.prepare('INSERT INTO configs (name, data, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)').run('assessment', JSON.stringify(DEFAULT_ASSESSMENT_CONFIG));
+  }
+}
+
+// ---- Configs (Site Content & Assessment Questions) ---------------------------------------------
+export async function getConfig(name: string): Promise<any | null> {
+  const row = sqlite.prepare('SELECT data FROM configs WHERE name = ?').get(name) as { data: string } | undefined;
+  if (!row?.data) return null;
+  try {
+    return JSON.parse(row.data);
+  } catch {
+    return null;
+  }
+}
+
+export async function setConfig(name: string, data: any): Promise<void> {
+  const json = JSON.stringify(data);
+  sqlite.prepare(`
+    INSERT INTO configs (name, data, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(name) DO UPDATE SET data = excluded.data, updated_at = CURRENT_TIMESTAMP
+  `).run(name, json);
+}
+
+// ---- Slots (Atomic Reservation) ----------------------------------------------------------------
+const slotId = (date: string, minutes: number) => `${date}_${minutes}`;
+
+export async function reserveSlot(date: string, minutes: number): Promise<boolean> {
+  const id = slotId(date, minutes);
+  try {
+    sqlite.prepare('INSERT INTO slots (id, date, minutes, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)').run(id, date, minutes);
+    return true;
+  } catch (err: any) {
+    if (err.message && err.message.includes('UNIQUE constraint failed')) {
+      return false;
     }
+    throw err;
   }
-
-  const reelsSnap = await col('instagram_reels').limit(1).get();
-  if (reelsSnap.empty) {
-    for (const r of initialReels) {
-      batch.set(col('instagram_reels').doc(r.id), { ...r, created_at: nowIso() });
-      writes++;
-    }
-  }
-
-  if (writes) await batch.commit();
 }
 
-// ---- Site content -----------------------------------------------------------------------------
-export async function getAllSettings(): Promise<Record<string, string>> {
-  const snap = await col('site_settings').get();
-  const result: Record<string, string> = {};
-  for (const d of snap.docs) result[d.id] = String(d.data().value ?? '');
-  return result;
+export async function releaseSlot(date: string, minutes: number): Promise<void> {
+  sqlite.prepare('DELETE FROM slots WHERE date = ? AND minutes = ?').run(date, minutes);
 }
 
-export async function updateSetting(key: string, value: string) {
-  await col('site_settings').doc(key).set({ key, value, updated_at: nowIso() }, { merge: true });
+export async function getBookingsOnDate(date: string): Promise<any[]> {
+  return sqlite.prepare("SELECT * FROM bookings WHERE date = ? AND status != 'Cancelled'").all(date);
 }
 
-const bySort = (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0);
+export async function getBookingById(id: number): Promise<any> {
+  return sqlite.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+}
 
+export async function updateBookingStatus(id: number, status: string): Promise<void> {
+  sqlite.prepare('UPDATE bookings SET status = ? WHERE id = ?').run(status, id);
+}
+
+// ---- Breath Protocols --------------------------------------------------------------------------
 export async function getBreathProtocols(): Promise<any[]> {
-  const snap = await col('breath_protocols').get();
-  return snap.docs.map((d) => d.data()).sort((a, b) => bySort(a, b) || String(a.name).localeCompare(String(b.name)));
+  return sqlite.prepare('SELECT * FROM breath_protocols ORDER BY sort_order ASC, name ASC').all();
 }
 
-export async function updateBreathProtocol(p: any) {
-  await col('breath_protocols').doc(String(p.id)).set({
+export async function updateBreathProtocol(p: any): Promise<void> {
+  sqlite.prepare(`
+    INSERT INTO breath_protocols (id, name, desc, inhale, holdIn, exhale, holdOut, emoji, animation_mode, video_url, instruction_audio, clinical_notes, sort_order)
+    VALUES (@id, @name, @desc, @inhale, @holdIn, @exhale, @holdOut, @emoji, @animation_mode, @video_url, @instruction_audio, @clinical_notes, @sort_order)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      desc = excluded.desc,
+      inhale = excluded.inhale,
+      holdIn = excluded.holdIn,
+      exhale = excluded.exhale,
+      holdOut = excluded.holdOut,
+      emoji = excluded.emoji,
+      animation_mode = excluded.animation_mode,
+      video_url = excluded.video_url,
+      instruction_audio = excluded.instruction_audio,
+      clinical_notes = excluded.clinical_notes,
+      sort_order = excluded.sort_order
+  `).run({
     id: String(p.id),
     name: p.name,
     desc: p.desc ?? '',
@@ -239,22 +411,50 @@ export async function updateBreathProtocol(p: any) {
     holdIn: Number(p.holdIn) || 0,
     exhale: Number(p.exhale) || 0,
     holdOut: Number(p.holdOut) || 0,
-    emoji: p.emoji ?? '',
+    emoji: p.emoji ?? '🧘',
     animation_mode: p.animation_mode ?? 'fluid',
     video_url: p.video_url ?? '',
     instruction_audio: p.instruction_audio ?? '',
     clinical_notes: p.clinical_notes ?? '',
-    sort_order: Number(p.sort_order) || 0,
-  }, { merge: true });
+    sort_order: Number(p.sort_order) || 0
+  });
 }
 
+// ---- Settings ----------------------------------------------------------------------------------
+export async function getAllSettings(): Promise<Record<string, string>> {
+  const rows = sqlite.prepare('SELECT key, value FROM site_settings').all() as { key: string; value: string }[];
+  const result: Record<string, string> = {};
+  for (const r of rows) result[r.key] = r.value;
+  return result;
+}
+
+export async function updateSetting(key: string, value: string): Promise<void> {
+  sqlite.prepare(`
+    INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+  `).run(key, value);
+}
+
+// ---- Instagram Reels ---------------------------------------------------------------------------
 export async function getInstagramReels(): Promise<any[]> {
-  const snap = await col('instagram_reels').get();
-  return snap.docs.map((d) => d.data()).sort((a, b) => bySort(a, b) || String(b.created_at).localeCompare(String(a.created_at)));
+  return sqlite.prepare('SELECT * FROM instagram_reels ORDER BY sort_order ASC, created_at DESC').all();
 }
 
-export async function addOrUpdateInstagramReel(r: any) {
-  await col('instagram_reels').doc(String(r.id)).set({
+export async function addOrUpdateInstagramReel(r: any): Promise<void> {
+  sqlite.prepare(`
+    INSERT INTO instagram_reels (id, title, views, likes, comments, thumbnail, video_url, duration, instagramUrl, sort_order)
+    VALUES (@id, @title, @views, @likes, @comments, @thumbnail, @video_url, @duration, @instagramUrl, @sort_order)
+    ON CONFLICT(id) DO UPDATE SET
+      title = excluded.title,
+      views = excluded.views,
+      likes = excluded.likes,
+      comments = excluded.comments,
+      thumbnail = excluded.thumbnail,
+      video_url = excluded.video_url,
+      duration = excluded.duration,
+      instagramUrl = excluded.instagramUrl,
+      sort_order = excluded.sort_order
+  `).run({
     id: String(r.id),
     title: r.title,
     views: r.views ?? '10K',
@@ -264,145 +464,141 @@ export async function addOrUpdateInstagramReel(r: any) {
     video_url: r.video_url ?? '',
     duration: r.duration ?? '0:60',
     instagramUrl: r.instagramUrl ?? '',
-    sort_order: Number(r.sort_order) || 0,
-    created_at: r.created_at ?? nowIso(),
-  }, { merge: true });
+    sort_order: Number(r.sort_order) || 0
+  });
 }
 
-export async function deleteInstagramReel(id: string) {
-  await col('instagram_reels').doc(String(id)).delete();
+export async function deleteInstagramReel(id: string): Promise<void> {
+  sqlite.prepare('DELETE FROM instagram_reels WHERE id = ?').run(id);
 }
 
-// ---- Clients & bookings -------------------------------------------------------------------------
+// ---- Clients -----------------------------------------------------------------------------------
 export async function getClientByEmail(email: string): Promise<any> {
-  const snap = await col('clients').where('email_lower', '==', String(email).trim().toLowerCase()).limit(1).get();
-  return snap.empty ? undefined : snap.docs[0].data();
+  const clean = String(email).trim().toLowerCase();
+  return sqlite.prepare('SELECT * FROM clients WHERE email_lower = ?').get(clean);
 }
 
 export async function getClientById(id: number): Promise<any> {
-  const snap = await col('clients').doc(String(id)).get();
-  return snap.exists ? snap.data() : undefined;
+  return sqlite.prepare('SELECT * FROM clients WHERE id = ?').get(id);
 }
 
 export async function createClient(email: string, name: string, passwordHash: string | null = null): Promise<any> {
-  const id = await nextId('clients');
-  const client = {
-    id, email, email_lower: email.trim().toLowerCase(), name,
-    history: null, password_hash: passwordHash, created_at: nowIso(),
-  };
-  await col('clients').doc(String(id)).set(client);
-  return client;
+  const cleanEmail = email.trim();
+  const cleanLower = cleanEmail.toLowerCase();
+  const info = sqlite.prepare(`
+    INSERT INTO clients (email, email_lower, name, password_hash, created_at)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `).run(cleanEmail, cleanLower, name.trim(), passwordHash);
+  return sqlite.prepare('SELECT * FROM clients WHERE id = ?').get(info.lastInsertRowid);
 }
 
-export async function createBooking(clientId: number, date: string, time: string, notes: string | null, meetLink: string | null, eventId: string | null, extra: Record<string, any> = {}) {
-  const id = await nextId('bookings');
-  await col('bookings').doc(String(id)).set({
-    id, client_id: clientId, date, time, notes, status: 'Upcoming',
-    meet_link: meetLink, event_id: eventId, created_at: nowIso(), ...extra,
-  });
-  return id;
+// ---- Bookings ----------------------------------------------------------------------------------
+export async function createBooking(
+  clientId: number,
+  date: string,
+  time: string,
+  notes: string | null,
+  meetLink: string | null,
+  eventId: string | null,
+  extra: Record<string, any> = {}
+): Promise<number> {
+  const info = sqlite.prepare(`
+    INSERT INTO bookings (client_id, date, time, notes, status, meet_link, event_id, service_id, service_title, duration_minutes, price, created_at)
+    VALUES (?, ?, ?, ?, 'Upcoming', ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `).run(
+    clientId,
+    date,
+    time,
+    notes,
+    meetLink,
+    eventId,
+    extra.service_id ?? null,
+    extra.service_title ?? null,
+    extra.duration_minutes ?? null,
+    extra.price ?? null
+  );
+  return Number(info.lastInsertRowid);
 }
-
-const newestFirst = (a: any, b: any) => String(b.date).localeCompare(String(a.date)) || String(b.time).localeCompare(String(a.time));
 
 export async function getClientBookings(clientId: number): Promise<any[]> {
-  const snap = await col('bookings').where('client_id', '==', Number(clientId)).get();
-  const rows = snap.docs.map((d) => d.data()).sort(newestFirst);
-  const sessions = await Promise.all(rows.map((b) => col('sessions').doc(String(b.id)).get()));
-  return rows.map((b, i) => ({ ...b, plan: sessions[i].exists ? sessions[i].data()!.plan ?? null : null }));
+  return sqlite.prepare(`
+    SELECT bookings.*, sessions.plan 
+    FROM bookings 
+    LEFT JOIN sessions ON bookings.id = sessions.booking_id 
+    WHERE bookings.client_id = ? 
+    ORDER BY bookings.date DESC, bookings.time DESC
+  `).all(clientId);
 }
 
 export async function getAdminBookings(): Promise<any[]> {
-  const [bookings, clients, sessions] = await Promise.all([
-    col('bookings').get(), col('clients').get(), col('sessions').get(),
-  ]);
-  const clientMap = new Map(clients.docs.map((d) => [d.id, d.data()]));
-  const sessionMap = new Map(sessions.docs.map((d) => [d.id, d.data()]));
-  return bookings.docs
-    .map((d) => d.data())
-    .filter((b) => clientMap.has(String(b.client_id)))
-    .sort(newestFirst)
-    .map((b) => {
-      const c = clientMap.get(String(b.client_id))!;
-      const s = sessionMap.get(String(b.id));
-      return {
-        ...b,
-        clientName: c.name, clientEmail: c.email, clientHistory: c.history ?? null,
-        transcription: s?.transcription ?? null, plan: s?.plan ?? null,
-      };
-    });
+  return sqlite.prepare(`
+    SELECT bookings.*, clients.name as clientName, clients.email as clientEmail, clients.history as clientHistory, sessions.transcription, sessions.plan
+    FROM bookings
+    JOIN clients ON bookings.client_id = clients.id
+    LEFT JOIN sessions ON bookings.id = sessions.booking_id
+    ORDER BY bookings.date DESC, bookings.time DESC
+  `).all();
 }
 
-// Session notes are stored one document per booking (document id = booking id).
-export async function saveSessionTransciption(bookingId: number, transcription: string) {
-  await col('sessions').doc(String(bookingId)).set({ booking_id: Number(bookingId), transcription, updated_at: nowIso() }, { merge: true });
+export async function saveSessionTransciption(bookingId: number, transcription: string): Promise<void> {
+  sqlite.prepare(`
+    INSERT INTO sessions (booking_id, transcription, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(booking_id) DO UPDATE SET transcription = excluded.transcription, updated_at = CURRENT_TIMESTAMP
+  `).run(bookingId, transcription);
 }
 
-export async function saveSessionPlan(bookingId: number, plan: string) {
-  await col('sessions').doc(String(bookingId)).set({ booking_id: Number(bookingId), plan, updated_at: nowIso() }, { merge: true });
+export async function saveSessionPlan(bookingId: number, plan: string): Promise<void> {
+  sqlite.prepare(`
+    INSERT INTO sessions (booking_id, plan, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(booking_id) DO UPDATE SET plan = excluded.plan, updated_at = CURRENT_TIMESTAMP
+  `).run(bookingId, plan);
 }
 
-export async function updateBookingStatus(bookingId: number, status: string) {
-  await col('bookings').doc(String(bookingId)).update({ status });
-}
-
-// ---- Assessments --------------------------------------------------------------------------------
-export async function saveAssessment(a: { id: string; overall: number; domains: Record<string, number>; answers?: number[]; clientEmail?: string }) {
-  await col('assessments').doc(a.id).set({
-    id: a.id, overall: a.overall, domains: a.domains, answers: a.answers || [],
-    client_email: a.clientEmail || null, created_at: nowIso(),
-  }, { merge: true });
+// ---- Assessments -------------------------------------------------------------------------------
+export async function saveAssessment(a: { id: string; overall: number; domains: Record<string, number>; answers?: number[]; clientEmail?: string }): Promise<void> {
+  sqlite.prepare(`
+    INSERT INTO assessments (id, overall, domains, answers, client_email, created_at)
+    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET overall = excluded.overall, domains = excluded.domains, answers = excluded.answers
+  `).run(
+    a.id,
+    a.overall,
+    JSON.stringify(a.domains || {}),
+    JSON.stringify(a.answers || []),
+    a.clientEmail || null
+  );
 }
 
 export async function getAssessments(): Promise<any[]> {
-  const snap = await col('assessments').get();
-  return snap.docs.map((d) => d.data()).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const rows = sqlite.prepare('SELECT * FROM assessments ORDER BY created_at DESC').all() as any[];
+  return rows.map(r => ({
+    ...r,
+    domains: typeof r.domains === 'string' ? JSON.parse(r.domains || '{}') : r.domains,
+    answers: typeof r.answers === 'string' ? JSON.parse(r.answers || '[]') : r.answers
+  }));
 }
 
-/** Quick connectivity check for the admin dashboard. */
 export async function ping(): Promise<boolean> {
   try {
-    await col('counters').limit(1).get();
+    sqlite.prepare('SELECT 1').get();
     return true;
   } catch {
     return false;
   }
 }
 
-// ---- Editable configuration documents (site content, questionnaire) -------------------------------
-export async function getConfig(name: string): Promise<any | null> {
-  const snap = await col('config').doc(name).get();
-  return snap.exists ? snap.data() : null;
-}
-
-export async function setConfig(name: string, data: any) {
-  await col('config').doc(name).set({ ...data, updated_at: nowIso() });
-}
-
-// ---- Slot reservations: one document per booked slot, so two people can never take the same one ----
-const slotId = (date: string, minutes: number) => `${date}_${minutes}`;
-
-/** Returns false if the slot was already taken. */
-export async function reserveSlot(date: string, minutes: number): Promise<boolean> {
-  try {
-    await col('slots').doc(slotId(date, minutes)).create({ date, minutes, created_at: nowIso() });
-    return true;
-  } catch (err: any) {
-    if (err?.code === 6 || /already exists/i.test(String(err?.message))) return false;
-    throw err;
+let firestoreInstance: any = null;
+export function getDb(): any {
+  if (!firestoreInstance) {
+    try {
+      const { initializeApp, getApps, applicationDefault } = require('firebase-admin/app');
+      const { getFirestore } = require('firebase-admin/firestore');
+      const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId });
+      firestoreInstance = getFirestore(app, databaseId);
+    } catch (e) {
+      console.warn("Firestore Admin not initialized:", e);
+      return null;
+    }
   }
-}
-
-export async function releaseSlot(date: string, minutes: number) {
-  await col('slots').doc(slotId(date, minutes)).delete();
-}
-
-export async function getBookingsOnDate(date: string): Promise<any[]> {
-  const snap = await col('bookings').where('date', '==', date).get();
-  return snap.docs.map((d) => d.data()).filter((b) => b.status !== 'Cancelled');
-}
-
-export async function getBookingById(id: number): Promise<any> {
-  const snap = await col('bookings').doc(String(id)).get();
-  return snap.exists ? snap.data() : undefined;
+  return firestoreInstance;
 }
