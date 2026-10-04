@@ -276,7 +276,7 @@ export default function Nutrition() {
               className="lg:col-span-7"
             >
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-[var(--serif)] font-light tracking-tight leading-[1.12] mb-6">
-                Food as <em className="italic font-medium text-emerald-600 dark:text-emerald-400 not-italic">Biological Code</em>.
+                Food as <em>Biological Code</em>.
                 <br />
                 Metabolic Mastery from Within.
               </h1>

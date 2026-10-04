@@ -101,8 +101,8 @@ export default function Login() {
           className="bg-sakura/20 p-10 rounded-[2rem] shadow-2xl border border-sakura"
         >
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-serif font-bold text-momo tracking-tight">
-              {isLogin ? 'Welcome Back.' : 'Create Account.'}
+            <h2 className="text-3xl font-serif font-light text-momo tracking-tight">
+              {isLogin ? <>Welcome <em>back</em>.</> : <>Create your <em>account</em>.</>}
             </h2>
             <p className="mt-3 text-sm text-momo/70 font-light">
               {isLogin 

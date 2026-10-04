@@ -55,7 +55,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="mb-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-serif font-bold text-momo tracking-tight">Client Portal.</h1>
+            <h1 className="text-4xl font-serif font-light text-momo tracking-tight">Client <em>portal</em>.</h1>
             <p className="text-momo/70 mt-2 font-light">Welcome back, {clientName || 'Client'}. Here is your progress.</p>
           </div>
           <button 

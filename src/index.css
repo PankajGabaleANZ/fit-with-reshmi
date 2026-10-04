@@ -62,3 +62,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+/* Headings share the logo's pairing: the serif for most words, a fine cursive script (the same
+   Pinyon Script as "Reshmi" in the wordmark) for the one emphasised word or phrase. */
+h1 em,
+h2 em,
+h3 em {
+  font-family: "Pinyon Script", "Snell Roundhand", cursive;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 1.32em;
+  line-height: 0.8;
+  letter-spacing: 0;
+  padding-right: 0.04em;
+}
