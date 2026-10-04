@@ -5,6 +5,7 @@ import { initAuth, googleSignIn, getAccessToken } from '../lib/auth';
 import type { User } from 'firebase/auth';
 import Onboarding from '../components/Onboarding';
 import { useRazorpay } from 'react-razorpay';
+import Brand from '../components/Brand';
 import { formatPrice } from '../lib/content';
 import { useContent } from '../lib/useContent';
 
@@ -303,8 +304,8 @@ export default function Booking() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sakura/50 via-mashiro to-mashiro"></div>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           <div className="text-center max-w-3xl mx-auto mb-10">
-            <h1 className="text-4xl md:text-5xl font-serif font-black tracking-tight text-momo uppercase mb-4">
-              Let's Personalize Your Journey
+            <h1 className="text-4xl md:text-5xl font-serif font-light tracking-tight text-momo mb-4">
+              Let's personalise <em>your journey</em>
             </h1>
             <p className="text-lg text-momo/70 font-light">
               Answer 5 quick questions so Reshmi can understand your needs before you book.
@@ -391,7 +392,7 @@ export default function Booking() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sakura/50 via-mashiro to-mashiro"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold text-momo mb-6 tracking-tight">Fit with Reshmi</h1>
+          <h1 className="text-5xl md:text-7xl font-serif font-light text-momo mb-6 tracking-tight"><Brand tm={false} /></h1>
           <p className="text-xl text-momo/70 font-light">
             {step === 1 ? "Select a service and choose a time that works for you." : "Just a few quick questions so we can hit the ground running!"}
           </p>
