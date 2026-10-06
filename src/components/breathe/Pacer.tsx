@@ -101,10 +101,10 @@ export default function Pacer({ protocols }: { protocols: Protocol[] }) {
     : { scale: [1, 1.01, 1], inner: [1, 1.015, 1], glow: [0.4, 0.45, 0.4], t: { duration: Math.max(2, phaseSeconds / 2), repeat: Infinity, ease: "easeInOut" as const } };
 
   return (
-    <section className="bg-band text-linen overflow-hidden">
+    <section className="bg-canvas text-ink overflow-hidden">
       <div className={`${CONTAINER} ${SECTION} grid grid-cols-1 lg:grid-cols-2 gap-14 items-center`}>
         <div className="order-2 lg:order-1">
-          <p className="text-[11px] font-semibold tracking-[0.22em] uppercase text-terracotta">Choose a rhythm</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.02em] text-accent">Choose a rhythm</p>
 
           <div className="grid grid-cols-2 gap-3 mt-5" role="radiogroup" aria-label="Breathing rhythm">
             {protocols.map((p, i) => (
@@ -113,17 +113,17 @@ export default function Pacer({ protocols }: { protocols: Protocol[] }) {
                 role="radio"
                 aria-checked={i === selected}
                 onClick={() => setSelected(i)}
-                className={`text-left rounded-lg border px-4 py-3.5 transition-colors cursor-pointer ${
-                  i === selected ? "border-terracotta bg-terracotta/15" : "border-linen/20 hover:bg-linen/10"
+                className={`text-left rounded-[20px] border px-4 py-3.5 transition-colors cursor-pointer ${
+                  i === selected ? "border-terracotta bg-surface" : "border-line hover:bg-surface"
                 }`}
               >
                 <span className="block font-serif text-[22px] leading-none tabular-nums">{cadenceOf(p)}</span>
-                <span className="block text-[12px] text-linen/70 mt-2 leading-snug">{p.name.replace(/\s*\(.*?\)\s*/g, " ").trim()}</span>
+                <span className="block text-[12px] text-muted mt-2 leading-snug">{p.name.replace(/\s*\(.*?\)\s*/g, " ").trim()}</span>
               </button>
             ))}
           </div>
 
-          {protocol.desc && <p className="text-[15px] leading-relaxed text-linen/75 mt-6 max-w-[460px]">{protocol.desc}</p>}
+          {protocol.desc && <p className="text-[15px] leading-relaxed text-muted mt-6 max-w-[460px]">{protocol.desc}</p>}
 
           <div className="flex flex-wrap items-center gap-3 mt-8">
             <button onClick={toggle} className={BTN_PRIMARY}>
@@ -132,7 +132,7 @@ export default function Pacer({ protocols }: { protocols: Protocol[] }) {
             </button>
             <button
               onClick={reset}
-              className="p-3.5 rounded-md border border-linen/25 text-linen hover:bg-linen/10 transition-colors cursor-pointer"
+              className="p-3.5 rounded-full border border-line text-ink hover:bg-surface transition-colors cursor-pointer"
               aria-label="Reset"
             >
               <RotateCcw size={15} />
@@ -140,7 +140,7 @@ export default function Pacer({ protocols }: { protocols: Protocol[] }) {
             <button
               onClick={toggleSound}
               aria-pressed={soundOn}
-              className="inline-flex items-center gap-2 p-3.5 sm:px-4 rounded-md border border-linen/25 text-linen hover:bg-linen/10 transition-colors cursor-pointer text-[12px] font-semibold tracking-[0.1em] uppercase"
+              className="inline-flex items-center gap-2 p-3.5 sm:px-4 rounded-full border border-line text-ink hover:bg-surface transition-colors cursor-pointer text-[15px] font-semibold"
             >
               {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
               <span className="hidden sm:inline">{soundOn ? "Sound on" : "Sound off"}</span>
@@ -148,7 +148,7 @@ export default function Pacer({ protocols }: { protocols: Protocol[] }) {
             </button>
           </div>
 
-          <p className="text-[12px] text-linen/60 mt-5" aria-live="polite">
+          <p className="text-[12px] text-faint mt-5" aria-live="polite">
             {cycles} {cycles === 1 ? "round" : "rounds"} completed
           </p>
         </div>
@@ -160,16 +160,16 @@ export default function Pacer({ protocols }: { protocols: Protocol[] }) {
               animate={{ scale: ring.scale, opacity: ring.glow }}
               transition={ring.t}
               className="absolute -inset-[10%] rounded-full blur-3xl"
-              style={{ background: "radial-gradient(circle, rgba(212,132,100,0.38) 0%, rgba(212,132,100,0.14) 40%, rgba(77,115,93,0.16) 62%, transparent 72%)" }}
+              style={{ background: "radial-gradient(circle, rgba(176,90,54,0.22) 0%, rgba(176,90,54,0.08) 40%, rgba(212,166,142,0.14) 62%, transparent 72%)" }}
             />
             <motion.div aria-hidden="true" animate={{ scale: ring.scale }} transition={ring.t} className="absolute inset-0">
               <motion.svg viewBox="0 0 400 400" className="w-full h-full" animate={reduceMotion ? undefined : { rotate: 360 }} transition={{ duration: 36, repeat: Infinity, ease: "linear" }}>
                 <defs>
                   <linearGradient id="pacerGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#F0B091" />
-                    <stop offset="0.42" stopColor="#D48464" />
-                    <stop offset="0.75" stopColor="#8A7A58" />
-                    <stop offset="1" stopColor="#4D735D" />
+                    <stop offset="0" stopColor="#E8C2AA" />
+                    <stop offset="0.42" stopColor="#B05A36" />
+                    <stop offset="0.75" stopColor="#C98A68" />
+                    <stop offset="1" stopColor="#D4A68E" />
                   </linearGradient>
                   <filter id="pacerBlur" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="9" />
@@ -183,9 +183,9 @@ export default function Pacer({ protocols }: { protocols: Protocol[] }) {
               <motion.svg viewBox="0 0 400 400" className="w-full h-full" animate={reduceMotion ? undefined : { rotate: -360 }} transition={{ duration: 52, repeat: Infinity, ease: "linear" }}>
                 <defs>
                   <linearGradient id="pacerGrad2" x1="1" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor="#4D735D" />
-                    <stop offset="0.5" stopColor="#D48464" />
-                    <stop offset="1" stopColor="#F0B091" />
+                    <stop offset="0" stopColor="#D4A68E" />
+                    <stop offset="0.5" stopColor="#B05A36" />
+                    <stop offset="1" stopColor="#E8C2AA" />
                   </linearGradient>
                 </defs>
                 <ellipse cx="200" cy="200" rx="172" ry="163" fill="none" stroke="url(#pacerGrad2)" strokeWidth="1" opacity="0.6" />
@@ -197,13 +197,13 @@ export default function Pacer({ protocols }: { protocols: Protocol[] }) {
               aria-label={active ? "Pause breathing session" : "Start breathing session"}
               className="relative w-[58%] h-[58%] rounded-full flex flex-col items-center justify-center text-center select-none cursor-pointer"
             >
-              <span className="text-[10px] sm:text-[11px] tracking-[0.24em] uppercase text-terracotta font-semibold">
+              <span className="text-[10px] sm:text-[11px] tracking-[0.02em] uppercase text-accent font-semibold">
                 {active ? LABEL[phase] : "Ready"}
               </span>
-              <span className="font-serif font-light text-[56px] sm:text-[76px] leading-none text-linen my-2 sm:my-3 tabular-nums">
+              <span className="font-serif font-light text-[60px] sm:text-[80px] leading-none text-ink my-2 sm:my-3 tabular-nums">
                 {active ? seconds : cadenceOf(protocol)}
               </span>
-              <span className="text-[10px] tracking-[0.2em] uppercase text-linen/60">{active ? "Follow the ring" : "Tap to begin"}</span>
+              <span className="text-[10px] tracking-[0.02em] uppercase text-faint">{active ? "Follow the ring" : "Tap to begin"}</span>
             </button>
           </div>
         </div>

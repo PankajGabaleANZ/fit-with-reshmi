@@ -326,7 +326,7 @@ export default function Booking() {
       <div className="bg-mashiro min-h-screen py-32 flex flex-col items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sakura/50 via-mashiro to-mashiro"></div>
         <div className="relative z-10 text-center max-w-lg mx-auto bg-sakura/20 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-sakura">
-          <h2 className="text-3xl font-serif font-bold text-momo mb-4">Sign in to Book</h2>
+          <h2 className="text-3xl font-serif font-normal text-momo mb-4">Sign in to Book</h2>
           <p className="text-momo/70 mb-8">We need access to your calendar to schedule your session with Reshmi.</p>
           <button 
             onClick={handleLogin}
@@ -359,7 +359,7 @@ export default function Booking() {
           <div className="w-20 h-20 bg-sakura rounded-full flex items-center justify-center mx-auto mb-6 text-momo border border-momo/30 shadow-[0_0_30px_rgba(245,143,152,0.3)]">
             <CheckCircle2 size={40} />
           </div>
-          <h2 className="text-3xl font-serif font-bold text-momo mb-4">You're All Set! 🎉</h2>
+          <h2 className="text-3xl font-serif font-normal text-momo mb-4">You're All Set! 🎉</h2>
           <p className="text-momo/80 mb-6">
             Your <span className="font-semibold text-momo">{selectedService.title}</span> is locked in for <span className="font-semibold text-momo">{selectedDate}</span> at <span className="font-semibold text-momo">{selectedTime}</span>.
           </p>

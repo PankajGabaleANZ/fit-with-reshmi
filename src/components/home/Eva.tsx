@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, Send } from "lucide-react";
-import Brand from "../Brand";
 import { BODY, BTN_DARK, CONTAINER, EYEBROW, H2, SECTION } from "./ui";
 
 interface Msg {
@@ -93,15 +92,15 @@ export default function Eva({ seed }: { seed: { text: string; nonce: number } | 
         <div className="lg:col-span-5">
           <p className={EYEBROW}>Meet Eva</p>
           <h2 className={`${H2} mt-4`}>
-            Your <Brand /> <em>AI assistant</em>.
+            Ask Eva, your <em>AI assistant</em>.
           </h2>
           <p className={`${BODY} mt-6`}>
             Eva helps you learn, find your way around and take the next step, any time of day.
           </p>
-          <ul className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-[14px] text-muted">
+          <ul className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-[15px] text-muted">
             {CAPABILITIES.map((c) => (
               <li key={c} className="flex gap-3 items-start">
-                <Check size={16} className="text-agave mt-0.5 shrink-0" />
+                <Check size={16} strokeWidth={2} className="text-accent mt-0.5 shrink-0" />
                 <span>{c}</span>
               </li>
             ))}
@@ -111,12 +110,12 @@ export default function Eva({ seed }: { seed: { text: string; nonce: number } | 
           </button>
         </div>
 
-        <div className="lg:col-span-7 bg-card border border-line rounded-xl p-5 sm:p-7 shadow-sm">
+        <div className="lg:col-span-7 bg-surface rounded-[24px] p-5 sm:p-8">
           <div className="flex items-center justify-between gap-3 pb-4 border-b border-line mb-4">
-            <span className="text-[12px] font-semibold tracking-[0.14em] uppercase text-ink">Eva · AI assistant</span>
+            <span className="font-mono text-[11px] uppercase text-faint">Eva · AI assistant</span>
             <Link
               to="/booking"
-              className="text-[12px] font-semibold tracking-[0.1em] uppercase text-accent hover:text-ink transition-colors no-underline"
+              className="text-[14px] font-semibold text-accent hover:text-ink transition-colors no-underline"
             >
               Book a session →
             </Link>
@@ -126,15 +125,15 @@ export default function Eva({ seed }: { seed: { text: string; nonce: number } | 
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`p-3.5 rounded-xl text-[13px] sm:text-sm leading-relaxed max-w-[88%] whitespace-pre-line ${
-                  m.role === "eva" ? "bg-surface text-ink mr-auto" : "bg-terracotta text-white ml-auto"
+                className={`px-4 py-3 rounded-[20px] text-[14px] sm:text-[15px] leading-[1.5] max-w-[88%] whitespace-pre-line ${
+                  m.role === "eva" ? "bg-card text-ink mr-auto rounded-bl-[6px]" : "bg-ink text-parchment ml-auto rounded-br-[6px]"
                 }`}
               >
                 {m.text}
               </div>
             ))}
             {busy && (
-              <div className="p-3.5 rounded-xl text-sm bg-surface text-faint mr-auto w-fit" aria-label="Eva is typing">
+              <div className="px-4 py-3 rounded-[20px] text-[14px] bg-card text-faint mr-auto w-fit" aria-label="Eva is typing">
                 Eva is typing…
               </div>
             )}
@@ -146,7 +145,7 @@ export default function Eva({ seed }: { seed: { text: string; nonce: number } | 
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="px-3 py-1.5 rounded-md bg-surface text-[12px] text-muted hover:text-ink border border-line transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-full bg-card text-[13px] text-muted hover:text-ink border border-line transition-colors cursor-pointer"
                 >
                   {s}
                 </button>
@@ -169,18 +168,18 @@ export default function Eva({ seed }: { seed: { text: string; nonce: number } | 
               maxLength={600}
               placeholder="Ask Eva anything about your health journey…"
               aria-label="Message Eva"
-              className="flex-1 min-w-0 px-4 py-3 rounded-md bg-canvas border border-line text-[13px] text-ink placeholder:text-faint focus:outline-none focus:border-terracotta"
+              className="flex-1 min-w-0 px-5 py-3 rounded-full bg-canvas border border-ash text-[15px] text-ink placeholder:text-faint focus:outline-none focus:shadow-[0_0_0_3px_rgba(176,90,54,0.2)]"
             />
             <button
               type="submit"
               disabled={busy}
               aria-label="Send message"
-              className="px-5 rounded-md bg-ink text-canvas hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+              className="w-12 h-12 shrink-0 flex items-center justify-center rounded-full bg-terracotta text-parchment hover:bg-[#99492a] disabled:opacity-50 transition-colors cursor-pointer"
             >
               <Send size={16} />
             </button>
           </form>
-          <p className="text-[11px] text-faint mt-3">
+          <p className="text-[12px] text-faint mt-4">
             Eva shares general education only. She can't diagnose, prescribe or replace a doctor or a consultation with Reshmi.
           </p>
         </div>

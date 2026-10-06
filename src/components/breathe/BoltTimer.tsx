@@ -55,7 +55,7 @@ export default function BoltTimer() {
   const b = result !== null ? band(result) : null;
 
   return (
-    <section id="bolt" className={`${SECTION} bg-surface`}>
+    <section id="bolt" className={SECTION}>
       <div className={`${CONTAINER} grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center`}>
         <div>
           <p className={EYEBROW}>Your BOLT score</p>
@@ -65,14 +65,14 @@ export default function BoltTimer() {
           <p className={`${BODY} mt-6 max-w-[480px]`}>
             The BOLT test times how long you can comfortably pause after a normal breath out. It is a simple snapshot of your breathing, not a medical test.
           </p>
-          <ol className="mt-7 space-y-3 text-[15px] text-muted max-w-[480px]">
+          <ol className="mt-8 space-y-4 text-[16px] text-muted max-w-[480px]">
             {[
               "Sit still and breathe normally through your nose for a minute.",
               "Breathe in, then out, normally. Pinch your nose and press Start.",
               "Stop at the first clear urge to breathe, then breathe in calmly through your nose.",
             ].map((t, i) => (
               <li key={i} className="flex gap-3">
-                <span className="font-serif text-accent text-[18px] leading-snug w-5 shrink-0">{i + 1}</span>
+                <span className="text-[14px] font-semibold text-accent leading-[1.6] w-6 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                 <span>{t}</span>
               </li>
             ))}
@@ -82,7 +82,7 @@ export default function BoltTimer() {
           </p>
         </div>
 
-        <div className="bg-card border border-line rounded-2xl p-8 sm:p-10 text-center">
+        <div className="bg-surface rounded-[24px] p-8 sm:p-12 text-center">
           <p className="font-serif font-light text-[84px] sm:text-[104px] leading-none text-ink tabular-nums" aria-live="off">
             {elapsed.toFixed(1)}
             <span className="text-[28px] text-faint ml-1">s</span>
@@ -99,7 +99,7 @@ export default function BoltTimer() {
             )}
             {(result !== null || elapsed > 0) && !running && (
               <button onClick={reset} className={BTN_OUTLINE} aria-label="Clear">
-                <RotateCcw size={13} />
+                <RotateCcw size={15} />
               </button>
             )}
           </div>
@@ -107,7 +107,7 @@ export default function BoltTimer() {
 
           {b && (
             <div className="mt-8 pt-6 border-t border-line" aria-live="polite">
-              <p className="font-serif text-[24px] text-ink">{b.label}</p>
+              <p className="font-serif italic font-light text-[30px] text-ink">{b.label}</p>
               <p className="text-[14px] leading-relaxed text-muted mt-2">{b.note}</p>
             </div>
           )}

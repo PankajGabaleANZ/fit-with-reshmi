@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { Play, Pause, RotateCcw, Volume2, VolumeX, ArrowRight } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { AmbientBreath } from "../../lib/ambient";
-import { CONTAINER, SECTION, BTN_PRIMARY } from "./ui";
+import { CONTAINER, SECTION, BTN_PRIMARY, H2, BODY } from "./ui";
 
 type Phase = "inhale" | "hold" | "exhale";
 const PHASE_SECONDS: Record<Phase, number> = { inhale: 4, hold: 7, exhale: 8 };
 
-/** Espresso band with a guided 4-7-8 pacer: glowing ring + ambient soundscape. */
+/** Guided 4-7-8 pacer on parchment: glowing terracotta ring + ambient soundscape. */
 export default function BreatheNow() {
   const reduceMotion = useReducedMotion();
   const [active, setActive] = useState(false);
@@ -79,16 +79,15 @@ export default function BreatheNow() {
     : { scale: [1.14, 1], innerScale: [1.2, 1], glow: [1, 0.4], transition: { duration: 8, ease: "easeInOut" as const } };
 
   return (
-    <section id="breathe-now" className="bg-band text-linen overflow-hidden">
+    <section id="breathe-now" className="bg-canvas text-ink overflow-hidden">
       <div className={`${CONTAINER} ${SECTION} grid grid-cols-1 lg:grid-cols-2 gap-14 items-center`}>
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.22em] uppercase text-terracotta">Try it now</p>
-          <h2 className="font-serif font-light text-[40px] sm:text-[52px] lg:text-[60px] leading-[1.05] tracking-tight mt-4">
-            “Breathe Now”
+          <p className="text-[12px] font-semibold uppercase tracking-[0.02em] text-accent">Try it now</p>
+          <h2 className={`${H2} mt-3`}>
+            Breathe <em>now</em>.
           </h2>
-          <p className="font-serif italic font-light text-[22px] sm:text-[26px] text-terracotta mt-2">A guided 4-7-8 pacer</p>
-          <p className="text-[16px] sm:text-[17px] leading-relaxed text-linen/75 max-w-[460px] mt-6">
-            Four seconds in, seven held, eight out. A slow, guided rhythm with a soft ambient soundscape, to help you settle in a few minutes, wherever you are.
+          <p className={`${BODY} max-w-[460px] mt-6`}>
+            A guided 4-7-8 rhythm: four seconds in, seven held, eight out, with a soft ambient soundscape to help you settle in a few minutes, wherever you are.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 mt-9">
@@ -98,7 +97,7 @@ export default function BreatheNow() {
             </button>
             <button
               onClick={reset}
-              className="p-3.5 rounded-md border border-linen/25 text-linen hover:bg-linen/10 transition-colors cursor-pointer"
+              className="p-3.5 rounded-full border border-line text-ink hover:bg-surface transition-colors cursor-pointer"
               aria-label="Reset counter"
             >
               <RotateCcw size={15} />
@@ -106,7 +105,7 @@ export default function BreatheNow() {
             <button
               onClick={toggleSound}
               aria-pressed={soundOn}
-              className="inline-flex items-center gap-2 p-3.5 sm:px-4 rounded-md border border-linen/25 text-linen hover:bg-linen/10 transition-colors cursor-pointer text-[12px] font-semibold tracking-[0.1em] uppercase"
+              className="inline-flex items-center gap-2 p-3.5 sm:px-4 rounded-full border border-line text-ink hover:bg-surface transition-colors cursor-pointer text-[15px] font-semibold"
             >
               {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
               <span className="hidden sm:inline">{soundOn ? "Sound on" : "Sound off"}</span>
@@ -114,17 +113,17 @@ export default function BreatheNow() {
             </button>
           </div>
 
-          <p className="text-[12px] text-linen/60 mt-5" aria-live="polite">
+          <p className="text-[12px] text-faint mt-5" aria-live="polite">
             {cycles} {cycles === 1 ? "cycle" : "cycles"} completed
           </p>
 
           <Link
             to="/breathe"
-            className="inline-flex items-center gap-2 mt-6 text-[12px] font-semibold tracking-[0.12em] uppercase text-terracotta hover:text-linen transition-colors no-underline"
+            className="inline-flex items-center gap-2 mt-6 text-[15px] font-semibold text-accent hover:text-ink transition-colors no-underline"
           >
-            Open the full breathing sanctuary <ArrowRight size={14} />
+            More breathing rhythms <ArrowRight size={14} />
           </Link>
-          <p className="text-[11px] text-linen/45 mt-6 max-w-[460px]">
+          <p className="text-[11px] text-faint mt-6 max-w-[460px]">
             Gentle breathing practice for general wellbeing. If you're pregnant or have a heart, blood-pressure or respiratory condition, check with your doctor first.
           </p>
         </div>
@@ -139,7 +138,7 @@ export default function BreatheNow() {
               className="absolute -inset-[10%] rounded-full blur-3xl"
               style={{
                 background:
-                  "radial-gradient(circle, rgba(212,132,100,0.38) 0%, rgba(212,132,100,0.14) 40%, rgba(77,115,93,0.16) 62%, transparent 72%)",
+                  "radial-gradient(circle, rgba(176,90,54,0.22) 0%, rgba(176,90,54,0.08) 40%, rgba(212,166,142,0.14) 62%, transparent 72%)",
               }}
             />
 
@@ -152,10 +151,10 @@ export default function BreatheNow() {
               >
                 <defs>
                   <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#F0B091" />
-                    <stop offset="0.42" stopColor="#D48464" />
-                    <stop offset="0.75" stopColor="#8A7A58" />
-                    <stop offset="1" stopColor="#4D735D" />
+                    <stop offset="0" stopColor="#E8C2AA" />
+                    <stop offset="0.42" stopColor="#B05A36" />
+                    <stop offset="0.75" stopColor="#C98A68" />
+                    <stop offset="1" stopColor="#D4A68E" />
                   </linearGradient>
                   <filter id="ringBlur" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="9" />
@@ -175,9 +174,9 @@ export default function BreatheNow() {
               >
                 <defs>
                   <linearGradient id="ringGrad2" x1="1" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor="#4D735D" />
-                    <stop offset="0.5" stopColor="#D48464" />
-                    <stop offset="1" stopColor="#F0B091" />
+                    <stop offset="0" stopColor="#D4A68E" />
+                    <stop offset="0.5" stopColor="#B05A36" />
+                    <stop offset="1" stopColor="#E8C2AA" />
                   </linearGradient>
                 </defs>
                 <ellipse cx="200" cy="200" rx="172" ry="163" fill="none" stroke="url(#ringGrad2)" strokeWidth="1" opacity="0.6" />
@@ -189,13 +188,13 @@ export default function BreatheNow() {
               aria-label={active ? "Pause breathing session" : "Start breathing session"}
               className="relative w-[58%] h-[58%] rounded-full flex flex-col items-center justify-center text-center select-none cursor-pointer"
             >
-              <span className="text-[10px] sm:text-[11px] tracking-[0.24em] uppercase text-terracotta font-semibold">
-                {active ? (phase === "inhale" ? "Inhale" : phase === "hold" ? "Hold" : "Exhale") : "Somatic cadence"}
+              <span className="text-[10px] sm:text-[11px] tracking-[0.02em] uppercase text-accent font-semibold">
+                {active ? (phase === "inhale" ? "Inhale" : phase === "hold" ? "Hold" : "Exhale") : "4-7-8 breathing"}
               </span>
-              <span className="font-serif font-light text-[56px] sm:text-[76px] leading-none text-linen my-2 sm:my-3 tabular-nums">
+              <span className="font-serif font-light text-[60px] sm:text-[80px] leading-none text-ink my-2 sm:my-3 tabular-nums">
                 {active ? seconds : "4-7-8"}
               </span>
-              <span className="text-[10px] tracking-[0.2em] uppercase text-linen/60">
+              <span className="text-[10px] tracking-[0.02em] uppercase text-faint">
                 {active ? "Breathe with the ring" : "Tap to begin"}
               </span>
             </button>

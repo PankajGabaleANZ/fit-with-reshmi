@@ -95,11 +95,11 @@ export default function Assessment({
       <motion.div
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-canvas border border-line rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-10 shadow-2xl relative text-left"
+        className="bg-canvas rounded-[24px] max-w-xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-10 shadow-[var(--shadow-float)] relative text-left"
       >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-md text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-full text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer"
           aria-label="Close assessment"
         >
           <X size={20} />
@@ -110,14 +110,14 @@ export default function Assessment({
             <p className={EYEBROW}>
               {labelOf(q.domain)} · {step + 1} of {ALL_QUESTIONS.length}
             </p>
-            <h3 className="font-serif font-light text-[24px] sm:text-[26px] leading-snug text-ink mt-4 mb-7 pr-8">{q.question}</h3>
+            <h3 className="font-serif text-[26px] sm:text-[30px] leading-[1.15] text-ink mt-4 mb-7 pr-8">{q.question}</h3>
 
             <div className="space-y-2.5 mb-8">
               {q.options.map((opt, i) => (
                 <button
                   key={i}
                   onClick={() => answer(opt.points)}
-                  className="w-full text-left p-4 rounded-lg bg-surface hover:bg-terracotta hover:text-white border border-line transition-colors text-[14px] text-ink cursor-pointer"
+                  className="w-full text-left px-5 py-4 rounded-[20px] bg-surface hover:bg-terracotta hover:text-parchment transition-colors text-[15px] text-ink cursor-pointer"
                 >
                   {opt.label}
                 </button>
@@ -128,7 +128,7 @@ export default function Assessment({
               <button
                 onClick={back}
                 disabled={step === 0}
-                className="inline-flex items-center gap-1.5 text-[12px] font-semibold tracking-[0.1em] uppercase text-muted hover:text-ink disabled:opacity-30 disabled:cursor-default cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-ink disabled:opacity-30 disabled:cursor-default cursor-pointer"
               >
                 <ArrowLeft size={14} /> Back
               </button>
@@ -140,12 +140,12 @@ export default function Assessment({
         ) : (
           summary && (
             <div>
-              <div className="w-12 h-12 rounded-full bg-terracotta/15 text-terracotta flex items-center justify-center mb-5">
+              <div className="w-12 h-12 rounded-full bg-surface text-accent flex items-center justify-center mb-5">
                 <Check size={24} />
               </div>
               <p className={EYEBROW}>Your health profile</p>
-              <h3 className="font-serif font-light text-[32px] sm:text-[36px] leading-tight text-ink mt-3">
-                Here's what your answers highlight
+              <h3 className="font-serif text-[34px] sm:text-[40px] leading-[1.1] text-ink mt-3">
+                Here's what your answers <em>highlight</em>
               </h3>
 
               <div className="mt-7 space-y-5">
@@ -158,7 +158,7 @@ export default function Assessment({
                       </span>
                     </div>
                     <div className="mt-2 h-1.5 rounded-full bg-surface overflow-hidden">
-                      <div className="h-full rounded-full bg-terracotta" style={{ width: `${summary.domains[d]}%` }} />
+                      <div className="h-full rounded-[2px] bg-terracotta" style={{ width: `${summary.domains[d]}%` }} />
                     </div>
                   </div>
                 ))}

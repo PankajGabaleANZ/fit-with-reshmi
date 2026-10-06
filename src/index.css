@@ -1,5 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap");
+/* Design system: "warm apothecary journal on parchment". Newsreader stands in for Financier Display,
+   Inter for Ftbase, JetBrains Mono for Fragment Mono (all free on Google Fonts). */
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap");
 @import "tailwindcss";
 
 /* Light theme only. Tie dark: to a data-theme="dark" attribute that is never set, so the
@@ -7,18 +9,27 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-  --font-sans: "Hanken Grotesk", "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Fraunces", Georgia, Cambria, "Times New Roman", serif;
+  --font-sans: "Inter", "Söhne", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader", "Tiempos Headline", "GT Super Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 
-  /* Fixed brand colours (60/30/10 formula from the design spec sheet) */
-  --color-terracotta: #D48464;
-  --color-sage: #4D735D;
-  --color-espresso: #2A1B14;
-  --color-linen: #FAF8F5;
-  --color-clay: #EFECE6;
-  --color-mashiro: #FAF8F5;
-  --color-sakura: #EFECE6;
-  --color-momo: #2A1B14;
+  /* One warm accent on a parchment stack. Older names (linen, sakura, momo...) map onto the same
+     palette so every page, including the admin, picks up the new look. */
+  --color-terracotta: #B05A36; /* Terracotta Seal: primary actions, eyebrows, active states only */
+  --color-sage: #D4A68E;       /* light tan from the seal gradient (no second hue) */
+  --color-espresso: #2A2B2F;
+  --color-linen: #FEF9EF;
+  --color-clay: #F5EEE1;
+  --color-mashiro: #FEF9EF;
+  --color-sakura: #F5EEE1;
+  --color-momo: #2A2B2F;
+  --color-parchment: #FEF9EF;
+  --color-paper: #F5EEE1;
+  --color-taupe: #D1C9BF;
+  --color-ash: #808988;
+
+  --shadow-float: 12px 32px 80px 0 rgba(42, 43, 47, 0.10);
+  --shadow-glow: 0 0 20px 0 rgba(0, 0, 0, 0.15);
 }
 
 /* Themed tokens: `inline` makes utilities read the variable on the element itself,
@@ -37,16 +48,16 @@
 }
 
 :root {
-  --c-canvas: #FAF8F5;
-  --c-ink: #2A1B14;
-  --c-muted: #564238;
-  --c-faint: #7E685D;
-  --c-surface: #EFECE6;
-  --c-card: #FFFFFF;
-  --c-line: rgba(42, 27, 20, 0.12);
-  --c-accent: #D48464;
-  --c-agave: #4D735D;
-  --c-band: #2A1B14;
+  --c-canvas: #FEF9EF;  /* Parchment: page canvas, never pure white */
+  --c-ink: #2A2B2F;     /* Ink: headings, primary text */
+  --c-muted: #333333;   /* Charcoal: body copy */
+  --c-faint: #515151;   /* Graphite: captions, helper text */
+  --c-surface: #F5EEE1; /* Aged Paper: cards and alternate sections */
+  --c-card: #FEF9EF;    /* cards that sit on an Aged Paper section */
+  --c-line: #D1C9BF;    /* Warm Taupe: hairlines and outlines */
+  --c-accent: #B05A36;  /* Terracotta Seal */
+  --c-agave: #2A2B2F;
+  --c-band: #2A2B2F;
 }
 
 html {
@@ -57,22 +68,35 @@ html {
 body {
   background: var(--c-canvas);
   color: var(--c-ink);
+  font-family: var(--font-sans);
+  letter-spacing: -0.023em; /* the system's tight UI tracking (sans only) */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The serif keeps its natural spacing */
+.font-serif,
+h1.font-serif,
+h2.font-serif,
+h3.font-serif {
+  letter-spacing: normal;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(176, 90, 54, 0.25);
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
 
-/* Headings share the logo's pairing: the serif for most words, a fine cursive script (the same
-   Pinyon Script as "Reshmi" in the wordmark) for the one emphasised word or phrase. */
+/* Signature move: roman + italic in the same serif headline. The emphasised word or phrase is the
+   italic, lighter weight. (The logo keeps its own script for "Reshmi".) */
 h1 em,
 h2 em,
 h3 em {
-  font-family: "Pinyon Script", "Snell Roundhand", cursive;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 1.32em;
-  line-height: 0.8;
-  letter-spacing: 0;
-  padding-right: 0.04em;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: normal;
 }

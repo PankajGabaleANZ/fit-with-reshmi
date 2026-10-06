@@ -127,7 +127,7 @@ export default function Login() {
                     required
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    className="appearance-none block w-full px-4 py-3 bg-mashiro border border-sakura rounded-xl text-momo placeholder-momo/40 focus:outline-none focus:ring-1 focus:ring-momo focus:border-momo sm:text-sm transition-colors"
+                    className="appearance-none block w-full px-4 py-3 bg-mashiro border border-ash rounded-full text-momo placeholder-momo/40 focus:outline-none focus:ring-1 focus:ring-momo focus:border-momo sm:text-sm transition-colors"
                     placeholder="John Doe"
                   />
                 </div>
@@ -145,7 +145,7 @@ export default function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full pl-11 pr-4 py-3 bg-mashiro border border-sakura rounded-xl text-momo placeholder-momo/40 focus:outline-none focus:ring-1 focus:ring-momo focus:border-momo sm:text-sm transition-colors"
+                  className="appearance-none block w-full pl-11 pr-4 py-3 bg-mashiro border border-ash rounded-full text-momo placeholder-momo/40 focus:outline-none focus:ring-1 focus:ring-momo focus:border-momo sm:text-sm transition-colors"
                   placeholder="you@example.com"
                 />
               </div>
@@ -164,7 +164,7 @@ export default function Login() {
                   autoComplete={isLogin ? 'current-password' : 'new-password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full pl-11 pr-4 py-3 bg-mashiro border border-sakura rounded-xl text-momo placeholder-momo/40 focus:outline-none focus:ring-1 focus:ring-momo focus:border-momo sm:text-sm transition-colors"
+                  className="appearance-none block w-full pl-11 pr-4 py-3 bg-mashiro border border-ash rounded-full text-momo placeholder-momo/40 focus:outline-none focus:ring-1 focus:ring-momo focus:border-momo sm:text-sm transition-colors"
                   placeholder="••••••••"
                 />
               </div>
@@ -194,7 +194,7 @@ export default function Login() {
 
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold tracking-widest uppercase rounded-xl text-mashiro bg-momo hover:bg-momo/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-momo transition-all hover:scale-[1.02]"
+              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-semibold rounded-full text-parchment bg-terracotta hover:bg-[#99492a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-momo transition-all hover:scale-[1.02]"
             >
               {isLogin ? 'Sign In' : 'Create Account'}
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -212,7 +212,7 @@ export default function Login() {
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              className="w-full flex justify-center py-4 px-4 border border-sakura text-sm font-bold tracking-widest rounded-xl text-momo bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-momo transition-all hover:scale-[1.02]"
+              className="w-full flex justify-center py-4 px-4 border border-sakura text-sm font-bold tracking-widest rounded-full text-momo bg-mashiro hover:bg-sakura focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-momo transition-all hover:scale-[1.02]"
             >
               <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
                 <path

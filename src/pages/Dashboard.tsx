@@ -60,7 +60,7 @@ export default function Dashboard() {
           </div>
           <button 
             onClick={() => navigate('/booking')} // navigate to booking page directly
-            className="inline-flex items-center justify-center px-6 py-3 text-sm font-bold tracking-widest uppercase rounded-xl text-mashiro bg-momo hover:bg-momo/90 transition-all hover:scale-[1.02]"
+            className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold rounded-full text-mashiro bg-momo hover:bg-momo/90 transition-all hover:scale-[1.02]"
           >
             <Calendar className="mr-2 h-4 w-4" />
             Book Consultation

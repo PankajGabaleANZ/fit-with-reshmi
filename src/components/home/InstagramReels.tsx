@@ -33,14 +33,14 @@ export default function InstagramReels() {
               <div className="hidden md:flex gap-2">
                 <button
                   onClick={() => scroller.current?.scrollBy({ left: -340, behavior: "smooth" })}
-                  className="p-3 rounded-md border border-line text-ink hover:bg-card transition-colors cursor-pointer"
+                  className="p-3 rounded-full border border-line text-ink hover:bg-card transition-colors cursor-pointer"
                   aria-label="Previous reels"
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={() => scroller.current?.scrollBy({ left: 340, behavior: "smooth" })}
-                  className="p-3 rounded-md border border-line text-ink hover:bg-card transition-colors cursor-pointer"
+                  className="p-3 rounded-full border border-line text-ink hover:bg-card transition-colors cursor-pointer"
                   aria-label="Next reels"
                 >
                   <ChevronRight size={18} />
@@ -54,9 +54,9 @@ export default function InstagramReels() {
           {codes.map((code) => (
             <div
               key={code}
-              className="snap-start shrink-0 w-[min(88vw,340px)] h-[620px] rounded-xl overflow-hidden bg-card border border-line relative"
+              className="snap-start shrink-0 w-[min(88vw,340px)] h-[620px] rounded-[24px] overflow-hidden bg-card relative"
             >
-              <span className="absolute inset-0 flex items-center justify-center text-[12px] tracking-[0.14em] uppercase text-faint">
+              <span className="absolute inset-0 flex items-center justify-center font-mono text-[11px] uppercase text-faint">
                 Loading reel…
               </span>
               <iframe
