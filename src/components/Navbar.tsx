@@ -14,8 +14,9 @@ const RESOURCES = [
 ];
 const CONTACT = { label: "Contact", to: "/#contact" };
 
+// Ghost text buttons: Ink text, a soft Aged Paper wash on hover, 12px nav radius
 const linkClass =
-  "text-[13px] font-medium tracking-wide text-muted hover:text-ink transition-colors no-underline whitespace-nowrap";
+  "px-3 py-2 rounded-[12px] text-[15px] font-normal text-ink/85 hover:text-ink hover:bg-surface transition-colors no-underline whitespace-nowrap";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -49,14 +50,13 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 inset-x-0 z-50 h-[72px] bg-canvas/95 backdrop-blur border-b border-line">
+      <header className="fixed top-0 inset-x-0 z-50 h-[72px] bg-canvas/95 backdrop-blur border-b border-taupe">
         <div className="h-full max-w-[1280px] mx-auto px-5 sm:px-8 flex items-center justify-between gap-6">
           <Link to="/" className="flex flex-col leading-none no-underline whitespace-nowrap shrink-0" aria-label="HealthwithReshmi, home">
-            <Brand className="font-serif text-[21px] sm:text-[23px] tracking-tight text-ink" />
-            <span className="mt-1.5 text-[10px] tracking-[0.22em] uppercase text-faint">Science-led. Human-centred.</span>
+            <Brand className="font-serif text-[22px] sm:text-[24px] text-ink" />
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-7" aria-label="Main">
+          <nav className="hidden lg:flex items-center gap-2" aria-label="Main">
             {NAV_LINKS.map((l) => (
               <a key={l.label} href={l.to} className={linkClass}>
                 {l.label}
@@ -73,12 +73,12 @@ export default function Navbar() {
                 Resources <ChevronDown size={14} className={`transition-transform ${resourcesOpen ? "rotate-180" : ""}`} />
               </button>
               {resourcesOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-4 min-w-[220px] bg-canvas border border-line rounded-lg shadow-lg py-2">
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 min-w-[230px] bg-canvas border border-line rounded-[12px] shadow-[var(--shadow-float)] p-1.5">
                   {RESOURCES.map((r) => (
                     <Link
                       key={r.to}
                       to={r.to}
-                      className="block px-4 py-2.5 text-[13px] text-muted hover:text-ink hover:bg-surface no-underline"
+                      className="block px-3.5 py-2.5 rounded-[10px] text-[15px] text-ink/85 hover:text-ink hover:bg-surface no-underline"
                     >
                       {r.label}
                     </Link>
@@ -92,16 +92,19 @@ export default function Navbar() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Link to="/login" className={`${linkClass} hidden md:inline-flex`}>
+              Log in
+            </Link>
             <button
               onClick={() => navigate("/booking")}
-              className="hidden sm:inline-flex items-center whitespace-nowrap px-5 py-2.5 rounded-md bg-espresso text-linen text-[12px] font-semibold tracking-[0.1em] uppercase hover:opacity-90 transition-opacity cursor-pointer"
+              className="hidden sm:inline-flex items-center whitespace-nowrap px-5 py-2.5 rounded-[40px] bg-terracotta text-parchment text-[15px] font-semibold hover:bg-[#99492a] transition-colors cursor-pointer"
             >
-              Book a Consultation →
+              Book a session
             </button>
 
             <button
-              className="lg:hidden p-2 rounded-md text-ink hover:bg-surface transition-colors cursor-pointer"
+              className="lg:hidden p-2.5 rounded-full text-ink hover:bg-surface transition-colors cursor-pointer"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
@@ -113,13 +116,13 @@ export default function Navbar() {
       </header>
 
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed top-[72px] inset-x-0 z-40 bg-canvas border-b border-line px-5 py-4 shadow-lg flex flex-col max-h-[calc(100vh-72px)] overflow-y-auto">
+        <div className="lg:hidden fixed top-[72px] inset-x-0 z-40 bg-canvas border-b border-line px-5 py-4 shadow-[var(--shadow-float)] flex flex-col max-h-[calc(100vh-72px)] overflow-y-auto">
           {[...NAV_LINKS, CONTACT].map((l) => (
             <a
               key={l.label}
               href={l.to}
               onClick={() => setMobileMenuOpen(false)}
-              className={`${linkClass} !text-[15px] py-3.5 border-b border-line`}
+              className="py-3.5 border-b border-line text-[16px] text-ink no-underline"
             >
               {l.label}
             </a>
@@ -129,19 +132,22 @@ export default function Navbar() {
               key={r.to}
               to={r.to}
               onClick={() => setMobileMenuOpen(false)}
-              className={`${linkClass} !text-[15px] py-3.5 border-b border-line`}
+              className="py-3.5 border-b border-line text-[16px] text-ink no-underline"
             >
               {r.label}
             </Link>
           ))}
+          <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="py-3.5 border-b border-line text-[16px] text-ink no-underline">
+            Log in
+          </Link>
           <button
             onClick={() => {
               setMobileMenuOpen(false);
               navigate("/booking");
             }}
-            className="mt-4 w-full py-3.5 rounded-md bg-espresso text-linen text-[12px] font-semibold tracking-[0.1em] uppercase cursor-pointer"
+            className="mt-4 w-full py-3.5 rounded-[40px] bg-terracotta text-parchment text-[16px] font-semibold cursor-pointer"
           >
-            Book a Consultation →
+            Book a session
           </button>
         </div>
       )}

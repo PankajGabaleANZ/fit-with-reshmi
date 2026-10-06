@@ -70,7 +70,8 @@ export const DEFAULT_CONTENT: SiteContent = {
     subheadline: "A personalised approach to nutrition, breathwork and lifestyle, designed around how you live, feel and function.",
     primaryButton: "Book a Health Clarity Session",
     secondaryButton: "Take Your Health Assessment",
-    imageUrl: "/hero-placeholder.svg",
+    // PLACEHOLDER (Unsplash, free licence): replace with a warm photo of Reshmi from the admin
+    imageUrl: "https://images.unsplash.com/photo-1729509804225-296f6ee80b67?auto=format&fit=crop&w=2400&q=80",
   },
   credibility: ["20+ Years in Healthcare Industry", "37+ kg Personal Transformation", "Personalised Health", "1:1 Guidance"],
   about: {

@@ -49,7 +49,7 @@ export default function Onboarding({ onComplete }: { onComplete: (answers: Recor
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-momo mb-2 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-serif font-normal text-momo mb-2 tracking-tight">
               {currentQ.title}
             </h2>
             <p className="text-momo/70 font-light mb-8">

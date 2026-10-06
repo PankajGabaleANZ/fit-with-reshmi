@@ -4,73 +4,73 @@
   /* ==========================================================================
      WEB DESIGN HANDOFF SPECIFICATION: RESHMI VERMA
      60/30/10 LUXURY FORMULA (Exact Hex Cards from Specification Sheet)
-     - 60% Global Canvas: Linen Ivory #FAF8F5
-     - 30% Main Content & Text: Deep Roast Espresso #2A1B14
-     - Structure & Surfaces: Subtle Soft Sandstone Clay #EFECE6
-     - 10% Active Accents: Sunlit Papaya Terracotta #D48464 & Deep Mineral Sage #4D735D
+     - 60% Global Canvas: Linen Ivory #FEF9EF
+     - 30% Main Content & Text: Deep Roast Espresso #2A2B2F
+     - Structure & Surfaces: Subtle Soft Sandstone Clay #F5EEE1
+     - 10% Active Accents: Sunlit Papaya Terracotta #B05A36 & Deep Mineral Sage #B05A36
      ========================================================================== */
-  --bg: #FAF8F5; /* Global Canvas (60%): Linen Ivory */
-  --canvas-linen: #FAF8F5;
-  --surface-card: #FFFFFF;
-  --surface-clay: #EFECE6; /* Subtle Soft Sandstone Clay for cards & dividers */
-  --surface-elevated: #FAF8F5;
+  --bg: #FEF9EF; /* Global Canvas (60%): Linen Ivory */
+  --canvas-linen: #FEF9EF;
+  --surface-card: #FEF9EF;
+  --surface-clay: #F5EEE1; /* Subtle Soft Sandstone Clay for cards & dividers */
+  --surface-elevated: #FEF9EF;
 
   /* Main Content & Text (30%): Deep Roast Espresso */
-  --ink: #2A1B14; /* Deep Roast Espresso for all primary content & text */
-  --muted: #564238; /* Soft Espresso */
-  --faint: #7E685D; /* Faint warm earth */
+  --ink: #2A2B2F; /* Deep Roast Espresso for all primary content & text */
+  --muted: #333333; /* Soft Espresso */
+  --faint: #515151; /* Faint warm earth */
 
   /* Active Accents (10% total) */
-  --terracotta: #D48464; /* Sunlit Papaya Terracotta */
-  --sage-mineral: #4D735D; /* Deep Mineral Sage / Agave */
-  --jade: #D48464; /* Primary Accent */
-  --mint: #E09273;
-  --sage: #4D735D;
-  --coral: #D48464;
-  --gold: #D48464;
+  --terracotta: #B05A36; /* Sunlit Papaya Terracotta */
+  --sage-mineral: #B05A36; /* Deep Mineral Sage / Agave */
+  --jade: #B05A36; /* Primary Accent */
+  --mint: #C4734F;
+  --sage: #B05A36;
+  --coral: #B05A36;
+  --gold: #B05A36;
 
   /* Hairlines, Glass & Shadows */
-  --glass: rgba(212, 132, 100, 0.06);
-  --glass-card: rgba(255, 255, 255, 0.95);
-  --glass-line: rgba(42, 27, 20, 0.12); /* Subtle Soft Sandstone / Espresso hairline */
-  --glass-line-accent: rgba(212, 132, 100, 0.35);
-  --shadow: 0 16px 45px -12px rgba(42, 27, 20, 0.08);
-  --shadow-accent: 0 16px 40px -10px rgba(212, 132, 100, 0.3);
-  --gl: rgba(212, 132, 100, 0.15);
-  --serif: "Fraunces", Georgia, serif;
-  --sans: "Hanken Grotesk", system-ui, sans-serif;
+  --glass: rgba(176, 90, 54, 0.06);
+  --glass-card: rgba(254, 249, 239, 0.95);
+  --glass-line: rgba(42, 43, 47, 0.12); /* Subtle Soft Sandstone / Espresso hairline */
+  --glass-line-accent: rgba(176, 90, 54, 0.35);
+  --shadow: 0 16px 45px -12px rgba(42, 43, 47, 0.08);
+  --shadow-accent: 0 16px 40px -10px rgba(176, 90, 54, 0.3);
+  --gl: rgba(176, 90, 54, 0.15);
+  --serif: "Newsreader", Georgia, serif;
+  --sans: "Inter", system-ui, sans-serif;
 
   /* Somatic Dark Luxury Chamber Tokens */
-  --somatic-bg: #2A1B14; /* Deep Roast Espresso chamber */
-  --somatic-card: #1D130E;
-  --somatic-border: rgba(212, 132, 100, 0.28);
-  --somatic-ink: #FAF8F5;
-  --somatic-muted: #E2CEC4;
-  --somatic-accent: #D48464;
+  --somatic-bg: #2A2B2F; /* Deep Roast Espresso chamber */
+  --somatic-card: #222327;
+  --somatic-border: rgba(176, 90, 54, 0.28);
+  --somatic-ink: #FEF9EF;
+  --somatic-muted: #D1C9BF;
+  --somatic-accent: #B05A36;
 }
 
 [data-style-theme="peach"],
 [data-style-theme="classic"],
 [data-style-theme="earthy"] {
-  --bg: #FAF8F5;
-  --canvas-linen: #FAF8F5;
-  --surface-clay: #EFECE6;
-  --ink: #2A1B14;
-  --muted: #564238;
-  --faint: #7E685D;
-  --terracotta: #D48464;
-  --sage-mineral: #4D735D;
-  --jade: #D48464;
-  --mint: #E09273;
-  --sage: #4D735D;
-  --coral: #D48464;
-  --gold: #D48464;
-  --glass: rgba(212, 132, 100, 0.06);
-  --glass-card: rgba(255, 255, 255, 0.95);
-  --glass-line: rgba(42, 27, 20, 0.12);
-  --glass-line-accent: rgba(212, 132, 100, 0.35);
-  --shadow: 0 16px 45px -12px rgba(42, 27, 20, 0.08);
-  --gl: rgba(212, 132, 100, 0.15);
+  --bg: #FEF9EF;
+  --canvas-linen: #FEF9EF;
+  --surface-clay: #F5EEE1;
+  --ink: #2A2B2F;
+  --muted: #333333;
+  --faint: #515151;
+  --terracotta: #B05A36;
+  --sage-mineral: #B05A36;
+  --jade: #B05A36;
+  --mint: #C4734F;
+  --sage: #B05A36;
+  --coral: #B05A36;
+  --gold: #B05A36;
+  --glass: rgba(176, 90, 54, 0.06);
+  --glass-card: rgba(254, 249, 239, 0.95);
+  --glass-line: rgba(42, 43, 47, 0.12);
+  --glass-line-accent: rgba(176, 90, 54, 0.35);
+  --shadow: 0 16px 45px -12px rgba(42, 43, 47, 0.08);
+  --gl: rgba(176, 90, 54, 0.15);
 }
 
 [data-theme="dark"] {
@@ -81,17 +81,17 @@
   --surface-clay: #2E2019;
   --surface-elevated: #32221B;
 
-  --ink: #FAF8F5; /* Linen Ivory text */
+  --ink: #FEF9EF; /* Linen Ivory text */
   --muted: #E6D7CD;
   --faint: #B5A094;
 
-  --terracotta: #E09273;
+  --terracotta: #C4734F;
   --sage-mineral: #69987B;
-  --jade: #E09273;
+  --jade: #C4734F;
   --mint: #EAA386;
   --sage: #69987B;
-  --coral: #E09273;
-  --gold: #E09273;
+  --coral: #C4734F;
+  --gold: #C4734F;
 
   --glass: rgba(224, 146, 115, 0.08);
   --glass-card: rgba(37, 25, 19, 0.92);
@@ -110,16 +110,16 @@
   --surface-card: #251913;
   --surface-clay: #2E2019;
   --surface-elevated: #32221B;
-  --ink: #FAF8F5;
+  --ink: #FEF9EF;
   --muted: #E6D7CD;
   --faint: #B5A094;
-  --terracotta: #E09273;
+  --terracotta: #C4734F;
   --sage-mineral: #69987B;
-  --jade: #E09273;
+  --jade: #C4734F;
   --mint: #EAA386;
   --sage: #69987B;
-  --coral: #E09273;
-  --gold: #E09273;
+  --coral: #C4734F;
+  --gold: #C4734F;
   --glass: rgba(224, 146, 115, 0.08);
   --glass-card: rgba(37, 25, 19, 0.92);
   --glass-line: rgba(250, 248, 245, 0.14);
@@ -185,8 +185,8 @@ body.neo-body ::selection {
 .neo-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 60; display: flex; align-items: center; justify-content: space-between; padding: 14px clamp(20px,4vw,50px); background: rgba(250, 247, 242, 0.95); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1.5px solid var(--glass-line); box-shadow: 0 4px 20px -8px rgba(23, 17, 13, 0.08); }
 [data-theme="dark"] .neo-nav { background: rgba(17, 9, 6, 0.95); box-shadow: 0 4px 20px -8px rgba(0, 0, 0, 0.7); }
 .brandmark { display: flex; align-items: center; gap: 12px; font-family: var(--serif); font-size: 1.25rem; font-weight: 600; letter-spacing: .2px; cursor: pointer; color: var(--ink); }
-.brandmark .leaf { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--jade), var(--coral)); color: #FFFFFF; font-weight: 700; font-size: .92rem; font-family: var(--sans); }
-.nav-cta { font-size: .82rem; font-weight: 700; padding: 10px 22px; border-radius: 100px; color: #FFFFFF; cursor: pointer; background: linear-gradient(135deg, var(--mint), var(--jade)); transition: .35s; border: none; box-shadow: 0 4px 14px -3px rgba(217, 72, 30, 0.4); }
+.brandmark .leaf { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--jade), var(--coral)); color: #FEF9EF; font-weight: 700; font-size: .92rem; font-family: var(--sans); }
+.nav-cta { font-size: .82rem; font-weight: 700; padding: 10px 22px; border-radius: 100px; color: #FEF9EF; cursor: pointer; background: linear-gradient(135deg, var(--mint), var(--jade)); transition: .35s; border: none; box-shadow: 0 4px 14px -3px rgba(217, 72, 30, 0.4); }
 .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 22px -5px rgba(217, 72, 30, 0.55); }
 
 /* Theme Toggle inside nav */
@@ -227,7 +227,7 @@ body.neo-body ::selection {
 .lead { color: var(--muted); font-size: clamp(1.02rem,1.3vw,1.15rem); max-width: 54ch; margin-top: 14px; line-height: 1.75; font-weight: 450; }
 
 .neo-btn { display: inline-flex; justify-content: center; align-items: center; gap: 10px; padding: 14px 28px; border-radius: 100px; font-weight: 700; font-size: .92rem; transition: .35s; cursor: pointer; border: none; font-family: var(--sans); }
-.btn-primary { background: linear-gradient(135deg, var(--mint), var(--jade)); color: #FFFFFF; box-shadow: 0 8px 24px -6px rgba(217, 72, 30, 0.45); }
+.btn-primary { background: linear-gradient(135deg, var(--mint), var(--jade)); color: #FEF9EF; box-shadow: 0 8px 24px -6px rgba(217, 72, 30, 0.45); }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px -8px rgba(217, 72, 30, 0.55); }
 .btn-ghost { background: var(--glass-card); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1.5px solid var(--glass-line); color: var(--ink); font-weight: 600; }
 [data-theme="dark"] .btn-ghost { background: rgba(35, 18, 12, 0.65); }
@@ -256,7 +256,7 @@ body.neo-body ::selection {
 .portrait .ph small { font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; max-width: 60%; font-weight: 600; }
 .halo { position: absolute; inset: -7%; border-radius: inherit; z-index: -1; background: conic-gradient(from 0deg, var(--jade), var(--coral), var(--gold), var(--jade)); filter: blur(34px); opacity: .45; animation: spin 16s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.float-card { position: absolute; background: rgba(250, 247, 242, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1.5px solid var(--glass-line); border-radius: 18px; padding: 12px 20px; box-shadow: 0 16px 36px -10px rgba(42, 27, 20, 0.14); animation: floaty 6s ease-in-out infinite; z-index: 5; white-space: nowrap; }
+.float-card { position: absolute; background: rgba(250, 247, 242, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1.5px solid var(--glass-line); border-radius: 18px; padding: 12px 20px; box-shadow: 0 16px 36px -10px rgba(42, 43, 47, 0.14); animation: floaty 6s ease-in-out infinite; z-index: 5; white-space: nowrap; }
 [data-theme="dark"] .float-card { background: rgba(37, 25, 19, 0.95); box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.7); }
 .float-card .t { font-family: var(--serif); font-size: 1.05rem; font-weight: 700; color: var(--jade); }
 .float-card .s { color: var(--ink); font-size: .76rem; font-weight: 600; margin-top: 2px; }
@@ -300,7 +300,7 @@ body.neo-body ::selection {
 .r-a .node { background: var(--jade); box-shadow: 0 0 14px var(--jade); }
 .r-b .node { background: var(--coral); box-shadow: 0 0 14px var(--coral); }
 .r-c .node { background: var(--mint); box-shadow: 0 0 14px var(--mint); }
-.core { width: 84px; height: 84px; border-radius: 50%; background: linear-gradient(135deg, var(--mint), var(--jade)); display: grid; place-items: center; font-family: var(--serif); color: #FFFFFF; font-weight: 700; font-size: .82rem; text-align: center; line-height: 1.15; box-shadow: 0 8px 30px rgba(230, 74, 25, 0.4); z-index: 2; }
+.core { width: 84px; height: 84px; border-radius: 50%; background: linear-gradient(135deg, var(--mint), var(--jade)); display: grid; place-items: center; font-family: var(--serif); color: #FEF9EF; font-weight: 700; font-size: .82rem; text-align: center; line-height: 1.15; box-shadow: 0 8px 30px rgba(230, 74, 25, 0.4); z-index: 2; }
 
 /* ---------- SCENE 3 · AI LAB ---------- */
 .lab-grid { display: grid; grid-template-columns: .95fr 1.05fr; gap: 46px; align-items: center; }
@@ -312,7 +312,7 @@ body.neo-body ::selection {
 .lab-tools { position: relative; z-index: 1; display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 24px; border-bottom: 1.5px solid var(--glass-line); }
 .tool-chip { font-size: .82rem; font-weight: 600; padding: 8px 16px; border-radius: 100px; border: 1.5px solid var(--glass-line); color: var(--ink); background: rgba(255, 255, 255, 0.5); cursor: pointer; transition: .3s; white-space: nowrap; font-family: var(--sans); }
 .tool-chip:hover { color: var(--jade); border-color: var(--jade); }
-.tool-chip.active { background: linear-gradient(135deg, var(--mint), var(--jade)); color: #FFFFFF; border-color: transparent; box-shadow: 0 4px 14px -3px rgba(230, 74, 25, 0.4); }
+.tool-chip.active { background: linear-gradient(135deg, var(--mint), var(--jade)); color: #FEF9EF; border-color: transparent; box-shadow: 0 4px 14px -3px rgba(230, 74, 25, 0.4); }
 .lab-inner { position: relative; z-index: 1; padding: 18px 24px 22px; text-align: left; }
 .chat { height: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--faint) transparent; }
 .chat::-webkit-scrollbar { width: 5px; } .chat::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 10px; }
@@ -320,7 +320,7 @@ body.neo-body ::selection {
 @keyframes pop { from { opacity: 0; transform: translateY(8px); } }
 .msg.bot { align-self: flex-start; background: rgba(255, 255, 255, 0.9); border: 1.5px solid var(--glass-line); border-bottom-left-radius: 4px; color: var(--ink); box-shadow: 0 2px 10px -4px rgba(0,0,0,0.06); }
 [data-theme="dark"] .msg.bot { background: rgba(44, 20, 13, 0.9); color: #FFF3EB; }
-.msg.user { align-self: flex-end; background: linear-gradient(135deg, var(--jade), var(--mint)); color: #FFFFFF; border-bottom-right-radius: 4px; font-weight: 600; }
+.msg.user { align-self: flex-end; background: linear-gradient(135deg, var(--jade), var(--mint)); color: #FEF9EF; border-bottom-right-radius: 4px; font-weight: 600; }
 .msg.bot strong { color: var(--jade); font-weight: 700; }
 .msg.thinking { display: flex; gap: 6px; align-items: center; }
 .msg.thinking span { width: 7px; height: 7px; border-radius: 50%; background: var(--jade); animation: blink 1.2s infinite; }
@@ -330,7 +330,7 @@ body.neo-body ::selection {
 .chat-input input { flex: 1; background: rgba(255, 255, 255, 0.9); border: 1.5px solid var(--glass-line); border-radius: 100px; padding: 13px 20px; color: var(--ink); font-weight: 500; font-family: var(--sans); font-size: .92rem; outline: none; transition: .3s; }
 [data-theme="dark"] .chat-input input { background: rgba(35, 18, 12, 0.9); color: #FFF3EB; }
 .chat-input input:focus { border-color: var(--jade); box-shadow: 0 0 0 3px rgba(230, 74, 25, 0.18); }
-.chat-input button { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer; display: grid; place-items: center; background: linear-gradient(135deg, var(--mint), var(--jade)); color: #FFFFFF; transition: .3s; box-shadow: 0 4px 14px -3px rgba(230, 74, 25, 0.4); }
+.chat-input button { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer; display: grid; place-items: center; background: linear-gradient(135deg, var(--mint), var(--jade)); color: #FEF9EF; transition: .3s; box-shadow: 0 4px 14px -3px rgba(230, 74, 25, 0.4); }
 .chat-input button:hover { transform: scale(1.08); }
 .chat-input button:disabled { opacity: .4; cursor: not-allowed; }
 .lab-note { font-size: .72rem; color: var(--faint); font-weight: 500; margin-top: 12px; text-align: center; }
@@ -417,7 +417,7 @@ body.neo-body ::selection {
   position: relative;
   z-index: 10;
   padding: 16px;
-  color: #FFFFFF;
+  color: #FEF9EF;
   width: 100%;
 }
 .ig-tile h4 {
@@ -719,7 +719,7 @@ body.neo-body ::selection {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #FFFFFF;
+  color: #FEF9EF;
   text-align: center;
   z-index: 10;
   transition: transform 0.2s ease;
@@ -746,7 +746,7 @@ body.neo-body ::selection {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #FFFFFF;
+  color: #FEF9EF;
   background: linear-gradient(135deg, #FF7A45 0%, #D9481E 100%);
   border: none;
   box-shadow: 0 10px 30px -5px rgba(217, 72, 30, 0.55);
